@@ -1,0 +1,14 @@
+cmd "director" {
+    exec = "director --director_config $DRC_BASE/software/models/IRB140/director_config.json";
+    host = "localhost";
+}
+
+cmd "robotiq_tcp_node" {
+    exec = "robotiq_tcp_node RIGHT 192.168.1.102";
+    host = "localhost";
+}
+
+cmd "IRB140DRCLCM_converter" {
+    exec = "python /home/locomotion/ABB-IRB140/robotsuite-lcm-util/IRB140DRCLCM_convertor.py";
+    host = "localhost";
+}
