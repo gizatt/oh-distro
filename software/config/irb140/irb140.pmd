@@ -1,10 +1,15 @@
 cmd "director" {
-    exec = "director --director_config $DRC_BASE/software/models/IRB140/director_config.json";
+    exec = "director --director_config $DRC_BASE/software/models/IRB140/director_config.json -c $DRC_BASE/software/config/irb140/irb140.cfg";
     host = "localhost";
 }
 
 cmd "robotiq_tcp_node" {
     exec = "robotiq_tcp_node RIGHT 192.168.1.102";
+    host = "localhost";
+}
+
+cmd "multisense_driver" {
+    exec = "multisense-lcm-driver -o 0 -n hokuyo_joint";
     host = "localhost";
 }
 
