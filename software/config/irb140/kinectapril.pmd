@@ -5,6 +5,13 @@ group "00.params" {
     }
 }
 
+group "alt00.params" {
+    cmd "pserver" {
+        exec = "bot-param-server $DRC_BASE/software/config/subsystems/sensor_rig/sensor_rig.cfg";
+        host = "localhost";
+    }
+}
+
 group "01.kinect_tools" {
     cmd "kinect_openni_read" {
         exec = "kinect-openni-lcm";
@@ -21,7 +28,7 @@ group "01.kinect_tools" {
 }
 
 cmd "April Tags" {
-    exec = "drc-car-tags-irb140 --threads=12  --window=true --quiet";
+    exec = "drc-car-tags-irb140 --size=0.1016 --threads=12  --window=true --quiet --asus";
     host = "localhost";
 }
 

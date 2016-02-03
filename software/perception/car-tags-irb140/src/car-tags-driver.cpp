@@ -180,30 +180,68 @@ class AprilTagDetector {
 class CameraListener {
     public:
 
+    CameraListener(getopt_t *getopt) {
+        useAsus = getopt_get_bool(getopt, "asus");
+        quiet = getopt_get_bool(getopt, "quiet");
+    }
+
     void setDetector(AprilTagDetector* detector) {
         mDetector = detector;
     }
 
     bool setup(bool show_window) {
+
         mBotWrapper.reset(new drc::BotWrapper());
 
         while (!mBotWrapper->getBotParam()) {
             std::cout << "Re-trying ... " << std::endl;
             mBotWrapper->setDefaults();
         }
-        
 
         mLcmWrapper.reset(new drc::LcmWrapper(mBotWrapper->getLcm()));
         mLcmWrapper->get()->subscribe("CAMERA", &CameraListener::onCamera, this);
 
-        mCamTransLeft = bot_param_get_new_camtrans(mBotWrapper->getBotParam(),"CAMERA_LEFT");
-        
-        K = Eigen::Matrix3d::Identity();
+        if (!useAsus) { // Using multisense LEFT_CAMERA
 
-        K(0,0) = bot_camtrans_get_focal_length_x(mCamTransLeft);
-        K(1,1) = bot_camtrans_get_focal_length_y(mCamTransLeft);
-        K(0,2) = bot_camtrans_get_principal_x(mCamTransLeft);
-        K(1,2) = bot_camtrans_get_principal_y(mCamTransLeft);
+            BotCamTrans* mCamTransLeft;
+            mCamTransLeft = bot_param_get_new_camtrans(mBotWrapper->getBotParam(),"CAMERA_LEFT");
+            
+            K = Eigen::Matrix3d::Identity();
+
+            K(0,0) = bot_camtrans_get_focal_length_x(mCamTransLeft);
+            K(1,1) = bot_camtrans_get_focal_length_y(mCamTransLeft);
+            K(0,2) = bot_camtrans_get_principal_x(mCamTransLeft);
+            K(1,2) = bot_camtrans_get_principal_y(mCamTransLeft);
+
+        } else { // Otherwise, using asus camera.
+
+            K = Eigen::Matrix3d::Identity();
+
+            // From $DRC_BASE/software/config/cubsystems/sensor_rig/sensor_rig.cfg:
+            //  asus{
+            //        rgb {
+            //            width = 640;
+            //            height = 480;
+            //
+            //            fx = 537.874;
+            //            fy = 537.953;
+            //            cx = 317.019;
+            //            cy = 242.859;
+            //        }
+            //        ...
+            //   }
+
+            //Thus:
+            K(0,0) = 537.874; // focal_length_x
+            K(1,1) = 537.953; // focal_length_y
+            K(0,2) = 317.019; // principal_x
+            K(1,2) = 242.859; // principal_y
+
+        }
+
+        if (!quiet) {
+            printf("Got cam params: fx %f, fy %f, cx %f, cy %f .\n",K(0,0),K(1,1),K(0,2),K(1,2));
+        }
 
         mShowWindow = show_window;
         return true;
@@ -249,7 +287,6 @@ class CameraListener {
             bot_core::rigid_transform_t tag_to_camera_msg = encodeLCMFrame(tag_to_camera);
             tag_to_camera_msg.utime = msg->utime;
             mLcmWrapper->get()->publish("APRIL_TAG_TO_CAMERA_LEFT", &tag_to_camera_msg);
-            break;
             
         }
         if (mShowWindow) {
@@ -285,10 +322,11 @@ class CameraListener {
 
     private:
     bool mShowWindow;
+    bool useAsus;
+    bool quiet;
     AprilTagDetector *mDetector;
     drc::LcmWrapper::Ptr mLcmWrapper;
     drc::BotWrapper::Ptr mBotWrapper;
-    BotCamTrans* mCamTransLeft;
     Eigen::Matrix3d K;
 };
 
@@ -310,6 +348,7 @@ int main(int argc, char *argv[])
     getopt_add_bool(getopt, '1', "refine-decode", 0, "Spend more time trying to decode tags");
     getopt_add_bool(getopt, '2', "refine-pose", 0, "Spend more time trying to precisely localize tags");
     getopt_add_double(getopt, 's', "size", "0.1735", "Physical side-length of the tag (meters)");
+    getopt_add_bool(getopt, '\0', "asus", 0, "Use asus kinect sensor if true, CAMERA->LEFT_CAMERA multisense if false");
     
 
     if (!getopt_parse(getopt, argc, argv, 1) || getopt_get_bool(getopt, "help")) {
@@ -319,7 +358,7 @@ int main(int argc, char *argv[])
     }  
 
     AprilTagDetector tag_detector(getopt);
-    CameraListener camera_listener;
+    CameraListener camera_listener(getopt);
 
     if (camera_listener.setup(getopt_get_bool(getopt, "window"))) {
         camera_listener.setDetector(&tag_detector);
