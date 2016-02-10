@@ -87,6 +87,17 @@ add_executable(drc-atlas-fall-detector runAtlasFallDetector.cpp)
 target_link_libraries(drc-atlas-fall-detector AtlasFallDetector)
 pods_install_executables(drc-atlas-fall-detector )
 
+add_library(IRB140Estimator SHARED IRB140Estimator.cpp)
+pods_use_pkg_config_packages(IRB140Estimator lcmtypes_drc_lcmtypes lcm drake-convex-hull)
+target_link_libraries(IRB140Estimator drakeRBM)
+pods_install_libraries(IRB140Estimator)
+pods_install_headers(IRB140Estimator.hpp DESTINATION control)
+
+add_executable(irb140_runEstimator irb140_runEstimator.cpp)
+target_link_libraries(irb140_runEstimator IRB140Estimator)
+pods_install_executables(irb140_runEstimator)
+
+
 add_subdirectory(contact-passthrough)
 
 install(TARGETS bot_timestamp_now bot_param_get_seqno bot_param_get_server_id mxSerialize mxDeserialize BotParamClient DESTINATION matlab)
