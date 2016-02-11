@@ -4,15 +4,6 @@
 using namespace std;
 using namespace Eigen;
 
-double getUnixTime(void)
-{
-    struct timespec tv;
-
-    if(clock_gettime(CLOCK_REALTIME, &tv) != 0) return 0;
-
-    return (tv.tv_sec + (tv.tv_nsec / 1000000000.0));
-}
-
 int main(int argc, char** argv) {
   const char* drc_path = std::getenv("DRC_BASE");
   if (!drc_path) {
@@ -22,7 +13,8 @@ int main(int argc, char** argv) {
   std::shared_ptr<RigidBodyTree> model(new RigidBodyTree(std::string(drc_path) + "/software/drake/drake/examples/IRB140/urdf/irb_140.urdf"));
   model->compile();
 
-  std::unique_ptr<IRB140Estimator> estimator(new IRB140Estimator(model));
+  std::unique_ptr<IRB140Estimator> estimator(new IRB140Estimator(model,
+    (std::string(drc_path) + "/software/config/irb140/multisense_05.cfg").c_str()));
   std::cout << "IRB140 Estimator Listening" << std::endl;
   estimator->run();
   return 0;

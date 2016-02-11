@@ -58,6 +58,7 @@ pods_install_headers(ExponentialForm.hpp DESTINATION control)
 
 add_library(QPReactiveRecoveryPlan SHARED QPReactiveRecoveryPlan.cpp)
 target_link_libraries(QPReactiveRecoveryPlan iris_cvxgen_ldp drakePolynomial ExponentialForm drakeGeometryUtil drakeTrajectories drakeSplineGeneration drakeRBM lcm drakeLCMUtil)
+
 pods_use_pkg_config_packages(QPReactiveRecoveryPlan drake-convex-hull drake-side drake-rbm drake-qp-common drake-control-util yaml-cpp)
 pods_install_libraries(QPReactiveRecoveryPlan)
 pods_install_headers(QPReactiveRecoveryPlan.hpp DESTINATION control)
@@ -88,8 +89,8 @@ target_link_libraries(drc-atlas-fall-detector AtlasFallDetector)
 pods_install_executables(drc-atlas-fall-detector )
 
 add_library(IRB140Estimator SHARED IRB140Estimator.cpp)
-pods_use_pkg_config_packages(IRB140Estimator lcmtypes_drc_lcmtypes lcm drake-convex-hull)
-target_link_libraries(IRB140Estimator drakeRBM)
+pods_use_pkg_config_packages(IRB140Estimator lcmtypes_drc_lcmtypes lcm drake-convex-hull kinect-utils lcmtypes_kinect bot2-lcmgl-client bot2-core bot2-frames bot2-param-client)
+target_link_libraries(IRB140Estimator drakeRBM lcmtypes_kinect)
 pods_install_libraries(IRB140Estimator)
 pods_install_headers(IRB140Estimator.hpp DESTINATION control)
 
