@@ -27,6 +27,13 @@ group "01.kinect_tools" {
     }
 }
 
+group "02.director" {
+    cmd "the_director" {
+        exec = "director --director_config $DRC_BASE/software/models/IRB140/director_config.json --config_file $DRC_BASE/software/config/irb140/irb140.cfg";
+        host = "localhost";
+    }
+}
+
 cmd "April Tags" {
     exec = "drc-car-tags-irb140 --size=0.1016 --threads=12  --window=true --quiet --asus";
     host = "localhost";
@@ -37,4 +44,5 @@ script "0.go" {
     wait ms 1000;
     start group "01.kinect_tools";
     start cmd "April Tags";
+    start group "02.director";
 }
