@@ -14,7 +14,7 @@ group "alt00.params" {
 
 group "01.kinect_tools" {
     cmd "kinect_openni_read" {
-        exec = "kinect-openni-lcm";
+        exec = "kinect-openni-lcm -z -j -r 10";
         host = "localhost";
     }
     cmd "kinect_rgb_translate" {
@@ -39,10 +39,17 @@ cmd "April Tags" {
     host = "localhost";
 }
 
+cmd "robotiq_tcp_node" {
+    exec = "robotiq_tcp_node LEFT 192.168.1.199";
+    host = "localhost";
+}
+
+
 script "0.go" {
     start group "00.params";
     wait ms 1000;
     start group "01.kinect_tools";
     start cmd "April Tags";
+    start cmd "robotiq_tcp_node";
     start group "02.director";
 }

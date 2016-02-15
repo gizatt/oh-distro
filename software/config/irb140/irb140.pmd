@@ -4,7 +4,7 @@ cmd "director" {
 }
 
 cmd "robotiq_tcp_node" {
-    exec = "robotiq_tcp_node RIGHT 192.168.1.102";
+    exec = "robotiq_tcp_node LEFT 192.168.1.199";
     host = "localhost";
 }
 
