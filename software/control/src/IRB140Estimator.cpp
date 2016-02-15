@@ -21,8 +21,6 @@ IRB140Estimator::IRB140Estimator(std::shared_ptr<RigidBodyTree> model, const cha
 
   this->initBotConfig(filename);
 
-  botframes_ = bot_frames_get_global(this->lcm.getUnderlyingLCM(), botparam_);
-
   // if we're using a kinect... (to be refactored)
   // This is in full agreement with Kintinuous: (calibrationAsus.yml)
   // NB: if changing this, it should be kept in sync
@@ -50,16 +48,15 @@ void IRB140Estimator::initBotConfig(const char* filename)
 {
   if (filename && filename[0])
     {
-    botparam_ = bot_param_new_from_file(filename);
+      botparam_ = bot_param_new_from_file(filename);
     }
   else
     {
     while (!botparam_)
       {
-      botparam_ = bot_param_new_from_server(this->lcm.getUnderlyingLCM(), 0);
+        botparam_ = bot_param_new_from_server(this->lcm.getUnderlyingLCM(), 0);
       }
     }
-
   botframes_ = bot_frames_get_global(this->lcm.getUnderlyingLCM(), botparam_);
 }
 
@@ -68,7 +65,7 @@ int IRB140Estimator::get_trans_with_utime(std::string from_frame, std::string to
 {
   if (!botframes_)
   {
-    std::cout << "vtkMultisenseSource::LCMListener: botframe is not initialized" << std::endl;
+    std::cout << "botframe is not initialized" << std::endl;
     mat = mat.matrix().Identity();
     return 0;
   }
@@ -89,11 +86,14 @@ void IRB140Estimator::update(double dt){
   latest_cloud_mutex.lock();
   cloud = latest_cloud;
   latest_cloud_mutex.unlock();
-
-  printf("Update %f %f\n", getUnixTime(), dt);
+  
   // the meat
+  Eigen::Isometry3d to_kinect;
+  long long utime;
+  this->get_trans_with_utime("robot_yplus_tag", "KINECT_FROM_APRILTAG", utime, to_kinect);
   // visualize point cloud
 
+  pcl::transformPointCloud(cloud, cloud, to_kinect.matrix());
   bot_lcmgl_point_size(lcmgl_, 4.5f);
   bot_lcmgl_color3f(lcmgl_, 0, 1, 0);
   int i = 0;

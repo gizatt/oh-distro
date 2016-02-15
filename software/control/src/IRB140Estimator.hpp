@@ -14,6 +14,7 @@
 #include "lcmtypes/kinect/frame_msg_t.hpp"
 #include <kinect/kinect-utils.h>
 #include "pcl/point_cloud.h"
+#include "pcl/common/transforms.h"
 #include "pcl/point_types.h"
 #include <mutex>
 #include <bot_lcmgl_client/lcmgl.h>
