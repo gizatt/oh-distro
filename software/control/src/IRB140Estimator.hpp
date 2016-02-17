@@ -34,7 +34,8 @@ class IRB140Estimator {
 public:
   ~IRB140Estimator() {}
 
-  IRB140Estimator(std::shared_ptr<RigidBodyTree> model, const char* filename);
+  IRB140Estimator(std::shared_ptr<RigidBodyTree> arm, std::shared_ptr<RigidBodyTree> manipuland, Eigen::Matrix<double, Eigen::Dynamic, 1> x0_arm, 
+    Eigen::Matrix<double, Eigen::Dynamic, 1> x0_manipuland, const char* filename);
   void run() {
     while(1){
       this->lcm.handleTimeout(0);
@@ -47,6 +48,7 @@ public:
   }
 
   void update(double dt);
+  void performICPStep(Eigen::Matrix3Xd& points);
 
   void setupSubscriptions();
   void initBotConfig(const char* filename);
@@ -70,8 +72,11 @@ public:
                            const kinect::frame_msg_t* msg);
 
 private:
-  std::shared_ptr<RigidBodyTree> model;
-  KinematicsCache<double> kinematics_cache;
+  std::shared_ptr<RigidBodyTree> arm;
+  std::shared_ptr<RigidBodyTree> manipuland;
+
+  Eigen::Matrix<double, Eigen::Dynamic, 1> x_arm;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> x_manipuland;
 
   std::mutex latest_cloud_mutex;
   KinectCalibration* kcal;
@@ -81,7 +86,9 @@ private:
   double timestep = 0.01;
 
   lcm::LCM lcm;
-  bot_lcmgl_t* lcmgl_ = NULL;
+  bot_lcmgl_t* lcmgl_lidar_ = NULL;
+  bot_lcmgl_t* lcmgl_manipuland_ = NULL;
+  bot_lcmgl_t* lcmgl_icp_ = NULL;
   BotParam* botparam_ = NULL;
   BotFrames* botframes_ = NULL;
 };
