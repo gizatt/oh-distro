@@ -1,15 +1,15 @@
 <?xml version="1.0"?>
 <robot
-  name="compressed_air_can">
-  <link name="cylinder">
+  name="jasmine_tea_box">
+  <link name="box">
     <visual>
       <geometry>
-        <cylinder radius="0.0325" length="0.21"/>
+        <box size="0.14 0.07 0.225"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.0325" length="0.21"/>
+        <box size="0.14 0.07 0.225"/>
       </geometry>
       <origin xyz="0 0 0"/>
     </collision>

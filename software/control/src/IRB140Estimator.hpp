@@ -74,6 +74,7 @@ public:
 private:
   std::shared_ptr<RigidBodyTree> arm;
   std::shared_ptr<RigidBodyTree> manipuland;
+  KinematicsCache<double> manipuland_kinematics_cache;
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> x_arm;
   Eigen::Matrix<double, Eigen::Dynamic, 1> x_manipuland;
@@ -81,6 +82,10 @@ private:
   std::mutex latest_cloud_mutex;
   KinectCalibration* kcal;
   pcl::PointCloud<pcl::PointXYZRGB> latest_cloud;
+  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> latest_depth_image;
+  Eigen::Matrix<double, 3, Eigen::Dynamic> raycast_endpoints;
+  int num_pixel_cols = 480;
+  int num_pixel_rows = 640;
 
   double last_update_time;
   double timestep = 0.01;
@@ -89,6 +94,7 @@ private:
   bot_lcmgl_t* lcmgl_lidar_ = NULL;
   bot_lcmgl_t* lcmgl_manipuland_ = NULL;
   bot_lcmgl_t* lcmgl_icp_ = NULL;
+  bot_lcmgl_t* lcmgl_measurement_model_ = NULL;
   BotParam* botparam_ = NULL;
   BotFrames* botframes_ = NULL;
 };

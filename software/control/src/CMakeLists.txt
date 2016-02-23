@@ -89,7 +89,7 @@ target_link_libraries(drc-atlas-fall-detector AtlasFallDetector)
 pods_install_executables(drc-atlas-fall-detector )
 
 add_library(IRB140Estimator SHARED IRB140Estimator.cpp)
-pods_use_pkg_config_packages(IRB140Estimator lcmtypes_drc_lcmtypes lcm drake-convex-hull kinect-utils lcmtypes_kinect bot2-lcmgl-client bot2-core bot2-frames bot2-param-client)
+pods_use_pkg_config_packages(IRB140Estimator lcmtypes_drc_lcmtypes lcm drake-convex-hull kinect-utils lcmtypes_kinect bot2-lcmgl-client bot2-core bot2-frames bot2-param-client opencv)
 target_link_libraries(IRB140Estimator drakeRBM lcmtypes_kinect)
 pods_install_libraries(IRB140Estimator)
 pods_install_headers(IRB140Estimator.hpp DESTINATION control)
@@ -98,6 +98,15 @@ add_executable(irb140_runEstimator irb140_runEstimator.cpp)
 target_link_libraries(irb140_runEstimator IRB140Estimator)
 pods_install_executables(irb140_runEstimator)
 
+add_executable(demonstrate_eigen_bug demonstrate_eigen_bug.cpp)
+target_link_libraries(demonstrate_eigen_bug)
+pods_use_pkg_config_packages(demonstrate_eigen_bug eigen3)
+pods_install_executables(demonstrate_eigen_bug)
+
+add_executable(test_2D_sdf test_2D_sdf.cpp)
+target_link_libraries(test_2D_sdf)
+pods_use_pkg_config_packages(test_2D_sdf eigen3)
+pods_install_executables(test_2D_sdf)
 
 add_subdirectory(contact-passthrough)
 
