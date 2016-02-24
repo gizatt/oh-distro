@@ -10,7 +10,7 @@ static inline float square(float x) { return x * x; }
 //     to the nearest 0-pixel of the input image
 // v: will return populated with the index of the closest 0-pixel from the input image
 //     for every pixel in the input image
-void dt(const Eigen::VectorXd& f, Eigen::VectorXd& d, Eigen::VectorXi& mapping) {
+void df_1d(const Eigen::VectorXd& f, Eigen::VectorXd& d, Eigen::VectorXi& mapping) {
   int n = f.rows();
   int *v = new int[n];
   d.resize(n);
@@ -41,6 +41,7 @@ void dt(const Eigen::VectorXd& f, Eigen::VectorXd& d, Eigen::VectorXi& mapping) 
   }
 
   delete [] z;
+  delete [] v;
 }
 
 // f: NxM binary image.
@@ -48,7 +49,7 @@ void dt(const Eigen::VectorXd& f, Eigen::VectorXd& d, Eigen::VectorXi& mapping) 
 //     to the nearest 0-pixel of the input image
 // v: will return populated with the index of the closest 0-pixel from the input image
 //     for every pixel in the input image
-void dt(Eigen::MatrixXd& f, Eigen::MatrixXd& d, Eigen::MatrixXi& mapping_row, Eigen::MatrixXi& mapping_col) {
+void df_2d(const Eigen::MatrixXd& f, Eigen::MatrixXd& d, Eigen::MatrixXi& mapping_row, Eigen::MatrixXi& mapping_col) {
   int width = f.cols();
   int height = f.rows();
 
@@ -66,7 +67,7 @@ void dt(Eigen::MatrixXd& f, Eigen::MatrixXd& d, Eigen::MatrixXi& mapping_row, Ei
   for (int x = 0; x < width; x++) {
     Eigen::VectorXd d_thiscol = d.block(0, x, height, 1);
     Eigen::VectorXi mapping_row_thiscol = mapping_row.block(0, x, height, 1);
-    dt(d.block(0, x, height, 1), d_thiscol, mapping_row_thiscol);
+    df_1d(d.block(0, x, height, 1), d_thiscol, mapping_row_thiscol);
     d.block(0, x, height, 1) = d_thiscol;
     for (int y=0; y < height; y++){
       if (d(y, x) < INF)
@@ -78,7 +79,7 @@ void dt(Eigen::MatrixXd& f, Eigen::MatrixXd& d, Eigen::MatrixXi& mapping_row, Ei
   for (int y = 0; y < height; y++) {
     Eigen::VectorXd d_thisrow = d.block(y, 0, 1, width).transpose();
     Eigen::VectorXi mapping_col_thisrow = mapping_col.block(y, 0, 1, width).transpose();
-    dt(d.block(y, 0, 1, width).transpose(), d_thisrow, mapping_col_thisrow);
+    df_1d(d.block(y, 0, 1, width).transpose(), d_thisrow, mapping_col_thisrow);
     d.block(y, 0, 1, width) = d_thisrow.transpose();
     
     for (int x=0; x < width; x++){
