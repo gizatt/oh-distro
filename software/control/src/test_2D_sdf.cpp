@@ -10,7 +10,7 @@ using namespace Eigen;
 int main(int argc, char** argv) {
   printf("\n\n\n1D CASE:\n");
   VectorXd test_f(10);
-  test_f << 0., INF, INF, INF, INF, INF, INF, INF, INF, 0.0; 
+  test_f << 0., INF, INF, INF, 0.0, 0.0, 0.0, INF, INF, INF; 
   cout << test_f.transpose() << endl;
   VectorXd d;
   VectorXi v;
@@ -20,13 +20,14 @@ int main(int argc, char** argv) {
   cout << d.transpose() << endl;
   cout << v.transpose() << endl;
   cout << endl;
+
   printf("\n\n\n2D CASE:\n");
 
-  MatrixXd test_f_2d(4, 3);
-  test_f_2d << 0.0, INF, INF,
-            INF, INF, INF,
-            INF, 0.0, INF,
-            INF, INF, INF;
+  MatrixXd test_f_2d(4, 4);
+  test_f_2d << 0.0, INF, INF, INF,
+            INF, INF, INF, INF,
+            INF, INF, 0.0, INF,
+            INF, INF, INF, INF,
   cout << test_f_2d << endl;
   MatrixXd d_2d;
   MatrixXi v_2d_row;
@@ -55,6 +56,7 @@ int main(int argc, char** argv) {
   printf("Start df_2d with %ld rows, %ld cols\n", test_f_2d_big.rows(), test_f_2d_big.cols());
   df_2d(test_f_2d_big, d_2d_big, v_2d_row_big, v_2d_col_big);
   printf("Leave df_2d\n");
+  cout << d_2d_big << endl;
   for (int i=0; i<test_f_2d_big.rows(); i++){
     for (int j=0; j<test_f_2d_big.cols(); j++){
       printf("(%2d,%2d)", v_2d_row_big(i,j), v_2d_col_big(i, j));
