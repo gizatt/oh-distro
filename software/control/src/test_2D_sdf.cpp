@@ -24,9 +24,9 @@ int main(int argc, char** argv) {
   printf("\n\n\n2D CASE:\n");
 
   MatrixXd test_f_2d(4, 4);
-  test_f_2d << 0.0, INF, INF, INF,
+  test_f_2d << INF, INF, INF, INF,
             INF, INF, INF, INF,
-            INF, INF, 0.0, INF,
+            INF, INF, INF, INF,
             INF, INF, INF, INF,
   cout << test_f_2d << endl;
   MatrixXd d_2d;

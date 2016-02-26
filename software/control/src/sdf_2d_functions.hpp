@@ -97,7 +97,7 @@ void df_2d(const Eigen::MatrixXd& f, Eigen::MatrixXd& d, Eigen::MatrixXi& mappin
   // resolve all references
   for (int x=0; x < width; x++){
     for (int y=0; y < height; y++){
-      mapping_row(y, x) = mapping_row_tmp(x, mapping_col(y, x));
+      mapping_row(y, x) = mapping_row_tmp(y, mapping_col(y, x));
     }
   }
 }
