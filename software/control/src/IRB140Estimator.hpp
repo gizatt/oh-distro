@@ -48,6 +48,7 @@ public:
   }
 
   void update(double dt);
+  void performFreespaceProjection(Eigen::Isometry3d& kinect2world, Eigen::MatrixXd& depth_image, pcl::PointCloud<pcl::PointXYZRGB>& points);
   void performICPStep(Eigen::Matrix3Xd& points);
 
   void setupSubscriptions();
@@ -84,8 +85,8 @@ private:
   pcl::PointCloud<pcl::PointXYZRGB> latest_cloud;
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> latest_depth_image;
   Eigen::Matrix<double, 3, Eigen::Dynamic> raycast_endpoints;
-  int num_pixel_cols = 480;
-  int num_pixel_rows = 640;
+  int num_pixel_cols = 640;
+  int num_pixel_rows = 480;
 
   double last_update_time;
   double timestep = 0.01;
@@ -97,6 +98,11 @@ private:
   bot_lcmgl_t* lcmgl_measurement_model_ = NULL;
   BotParam* botparam_ = NULL;
   BotFrames* botframes_ = NULL;
+
+  double manip_x_bounds[2] = {0.45, 0.75};
+  double manip_y_bounds[2] = {-0.1, 0.2};
+  double manip_z_bounds[2] = {0.7, 1.05};
+
 };
 
 #endif

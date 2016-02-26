@@ -18,7 +18,7 @@ int main(int argc, char** argv) {
   x0_arm*=0;
 
   VectorXd x0_manipuland(manipuland->num_positions + manipuland->num_velocities);
-  x0_manipuland << 0.54, 0.0, 0.88, 0.0, 0.0, 0.0, 
+  x0_manipuland << 0.5, 0.0, 0.88, 0.0, 0.0, 1.5, 
                    0.5, 0.0, 0.7, 0.0, 0.0, 0.0,
                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 
                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
