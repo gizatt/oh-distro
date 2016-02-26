@@ -36,7 +36,7 @@ void df_1d(const Eigen::VectorXd& f, Eigen::VectorXd& d, Eigen::VectorXi& mappin
   for (int q = 0; q <= n-1; q++) {
     while (z[k+1] < q)
       k++;
-
+    
     d[q] = square(q-v[k]) + f[v[k]];
     mapping(q) = v[k];
 

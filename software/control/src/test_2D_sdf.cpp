@@ -66,16 +66,17 @@ int main(int argc, char** argv) {
 
   printf("\n\n\nHUGE 2D CASE:\n");
   MatrixXd test_f_2d_huge = MatrixXd::Constant(640, 480, INF);
-  test_f_2d_big(12, 12) = 0.0;
-  test_f_2d_big(5, 12) = 0.0;
-  test_f_2d_big(3, 1) = 0.0;
-  test_f_2d_big(0, 0) = 0.0;
+  test_f_2d_huge(12, 12) = 0.0;
+  test_f_2d_huge(5, 12) = 0.0;
+  test_f_2d_huge(3, 1) = 0.0;
+  test_f_2d_huge(0, 0) = 0.0;
   MatrixXd d_2d_huge;
   MatrixXi v_2d_row_huge;
   MatrixXi v_2d_col_huge;
   printf("Start df_2d with %ld rows, %ld cols\n", test_f_2d_huge.rows(), test_f_2d_huge.cols());
   df_2d(test_f_2d_huge, d_2d_huge, v_2d_row_huge, v_2d_col_huge);
   printf("Leave df_2d\n");
+  cout << d_2d_huge.block<12, 12>(100, 100) << endl;
 
   return 0;
 }
