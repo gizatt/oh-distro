@@ -50,8 +50,7 @@ public:
   }
 
   void update(double dt);
-  void performFreespaceProjection(Eigen::Isometry3d& kinect2world, Eigen::MatrixXd& depth_image, pcl::PointCloud<pcl::PointXYZRGB>& points);
-  void performICPStep(Eigen::Matrix3Xd& points);
+  void performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen::MatrixXd& depth_image, pcl::PointCloud<pcl::PointXYZRGB>& full_cloud, Eigen::Matrix3Xd& points);
 
   void setupSubscriptions();
   void initBotConfig(const char* filename);
@@ -106,7 +105,7 @@ private:
   double manip_x_bounds[2] = {0.45, 0.75};
   double manip_y_bounds[2] = {-0.1, 0.2};
   //double manip_z_bounds[2] = {0.7, 1.05};
-  double manip_z_bounds[2] = {1.05, 1.5};
+  double manip_z_bounds[2] = {1.15, 1.35};
 
 };
 
