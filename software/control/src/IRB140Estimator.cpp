@@ -108,6 +108,8 @@ IRB140Estimator::IRB140Estimator(std::shared_ptr<RigidBodyTree> arm, std::shared
 
   this->setupSubscriptions();
 
+  visualizer = make_shared<Drake::BotVisualizer<Drake::RigidBodySystem::StateVector>>(make_shared<lcm::LCM>(lcm),manipuland);
+
   namedWindow( "IRB140EstimatorDebug", WINDOW_AUTOSIZE );
   startWindowThread();
 }
@@ -191,7 +193,7 @@ void IRB140Estimator::update(double dt){
   // (regular resize would clear them)
   points.conservativeResize(3, i);
 
-
+/*
   // visualize manipuland
   bot_lcmgl_point_size(lcmgl_manipuland_, 4.5f);
   bot_lcmgl_color3f(lcmgl_manipuland_, 1, 0, 1);
@@ -218,7 +220,12 @@ void IRB140Estimator::update(double dt){
   bot_lcmgl_box(lcmgl_manipuland_, zeros_table, size_table);
   bot_lcmgl_pop_matrix(lcmgl_manipuland_);
   bot_lcmgl_switch_buffer(lcmgl_manipuland_);  
+*/
 
+  printf("Visualizing state:\n");
+  cout << x_manipuland.transpose() << endl;
+  visualizer->output(getUnixTime(), VectorXd(1), x_manipuland);
+  
   double now=getUnixTime();
   this->performFreespaceProjection(kinect2world, depth_image, full_cloud);
   printf("elapsed in SDF: %f\n", getUnixTime() - now);
@@ -240,7 +247,8 @@ void IRB140Estimator::update(double dt){
   }
   bot_lcmgl_end(lcmgl_lidar_);
   bot_lcmgl_switch_buffer(lcmgl_lidar_);  
-}
+
+}  
 
 void IRB140Estimator::performFreespaceProjection(Eigen::Isometry3d& kinect2world, Eigen::MatrixXd& depth_image, pcl::PointCloud<pcl::PointXYZRGB>& full_cloud){
   // calculate SDFs in the image plane (not voxel grid like DART... too expensive
@@ -348,7 +356,6 @@ void IRB140Estimator::performFreespaceProjection(Eigen::Isometry3d& kinect2world
 
   // for every body...
   for (int bdy_i=0; bdy_i < manipuland->bodies.size(); bdy_i++){
-    printf("Points on body %d: %d\n", bdy_i, num_points_on_body[bdy_i]);
     // assemble correction vectors and points for this body
     if (num_points_on_body[bdy_i] > 0){
       int k = 0;
@@ -451,7 +458,7 @@ void IRB140Estimator::performFreespaceProjection(Eigen::Isometry3d& kinect2world
 
 
 
-  bot_lcmgl_point_size(lcmgl_measurement_model_, 2.0f);
+  bot_lcmgl_point_size(lcmgl_measurement_model_, 4.0f);
   bot_lcmgl_color3f(lcmgl_measurement_model_, 0, 0, 1);  
   bot_lcmgl_begin(lcmgl_measurement_model_, LCMGL_POINTS);
   for (int i = 0; i < distances.rows(); i++){
@@ -460,7 +467,7 @@ void IRB140Estimator::performFreespaceProjection(Eigen::Isometry3d& kinect2world
       if (endpt(0) > manip_x_bounds[0] && endpt(0) < manip_x_bounds[1] && 
           endpt(1) > manip_y_bounds[0] && endpt(1) < manip_y_bounds[1] && 
           endpt(2) > manip_z_bounds[0] && endpt(2) < manip_z_bounds[1] &&
-          observation_sdf(i) > 0.0 && observation_sdf(i) < INF) {
+          (1 || observation_sdf(i) > 0.0 && observation_sdf(i) < INF)) {
         bot_lcmgl_vertex3f(lcmgl_measurement_model_, endpt(0), endpt(1), endpt(2));
       }
     }

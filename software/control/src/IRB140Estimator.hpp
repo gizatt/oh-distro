@@ -6,6 +6,8 @@
 #include <lcm/lcm-cpp.hpp>
 
 #include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/BotVisualizer.h"
+#include "drake/systems/plants/RigidBodySystem.h"
 #include "lcmtypes/drc/utime_t.hpp"
 #include "lcmtypes/drake/lcmt_robot_state.hpp"
 #include "bot_core/planar_lidar_t.hpp"
@@ -99,9 +101,12 @@ private:
   BotParam* botparam_ = NULL;
   BotFrames* botframes_ = NULL;
 
+  std::shared_ptr<Drake::BotVisualizer<Drake::RigidBodySystem::StateVector>> visualizer;
+
   double manip_x_bounds[2] = {0.45, 0.75};
   double manip_y_bounds[2] = {-0.1, 0.2};
-  double manip_z_bounds[2] = {0.7, 1.05};
+  //double manip_z_bounds[2] = {0.7, 1.05};
+  double manip_z_bounds[2] = {1.05, 1.5};
 
 };
 
