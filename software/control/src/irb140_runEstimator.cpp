@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
   arm->compile();
 
   //std::shared_ptr<RigidBodyTree> manipuland(new RigidBodyTree(std::string(drc_path) + "/software/control/src/jasmine_tea_box.urdf"));
-  std::shared_ptr<RigidBodyTree> manipuland(new RigidBodyTree(std::string(drc_path) + "/software/control/src/robotiq_simple_collision.urdf"));
+  std::shared_ptr<RigidBodyTree> manipuland(new RigidBodyTree(std::string(drc_path) + "/software/control/src/urdf/robotiq_simple_collision.urdf"));
   //manipuland->addRobotFromURDF(std::string(drc_path) + "/software/drake/drake/examples/Atlas/urdf/robotiq_simple.urdf", DrakeJoint::ROLLPITCHYAW);
   manipuland->compile();
 
