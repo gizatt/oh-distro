@@ -43,8 +43,9 @@ inline bool is_nan(const Eigen::MatrixBase<Derived>& x)
 
 IRB140Estimator::IRB140Estimator(std::shared_ptr<RigidBodyTree> arm, std::shared_ptr<RigidBodyTree> manipuland, 
       Eigen::Matrix<double, Eigen::Dynamic, 1> x0_arm, Eigen::Matrix<double, Eigen::Dynamic, 1> x0_manipuland,
-    const char* filename) :
-    x_arm(x0_arm), x_manipuland(x0_manipuland), manipuland_kinematics_cache(manipuland->bodies)
+    const char* filename, const char* state_channelname, bool transcribe_published_floating_base) :
+    x_arm(x0_arm), x_manipuland(x0_manipuland), manipuland_kinematics_cache(manipuland->bodies),
+    transcribe_published_floating_base(transcribe_published_floating_base)
 {
   this->arm = arm;
   this->manipuland = manipuland;
@@ -93,22 +94,37 @@ IRB140Estimator::IRB140Estimator(std::shared_ptr<RigidBodyTree> arm, std::shared
   double min_yaw = -half_yaw_fov;
   double max_yaw = half_yaw_fov;
   */
+
+  num_pixel_cols = (int) ceil( ((double)input_num_pixel_cols) / downsample_amount);
+  num_pixel_rows = (int) ceil( ((double)input_num_pixel_rows) / downsample_amount);
+
   double max_range = 30.0;
   raycast_endpoints.resize(3,num_pixel_rows*num_pixel_cols);
   double constant = 1.0f / kcal->intrinsics_rgb.fx ;
   for (size_t v=0; v<num_pixel_rows; v++) {
     for (size_t u=0; u<num_pixel_cols; u++) {
       raycast_endpoints.col(num_pixel_cols*v + u) = Vector3d(
-        (((double) u)- kcal->intrinsics_depth.cx)*1.0*constant,
-        (((double) v)- kcal->intrinsics_depth.cy)*1.0*constant, 
+        (((double) u)*downsample_amount- kcal->intrinsics_depth.cx)*1.0*constant,
+        (((double) v)*downsample_amount- kcal->intrinsics_depth.cy)*1.0*constant, 
         1.0); // rolled out from rotx(pitch)*roty(yaw)*[0;0;1]
       raycast_endpoints.col(num_pixel_cols*v + u) *= max_range/raycast_endpoints.col(num_pixel_cols*v + u).norm();
     }
   }
 
+  x_manipuland_measured.resize(x0_manipuland.rows());
+  x_manipuland_measured_known.resize(x0_manipuland.rows());
+  fill(x_manipuland_measured_known.begin(), x_manipuland_measured_known.end(), false);
+
+/*
+  for (int i=0; i<12; i++){
+    x_manipuland_measured_known[manipuland->num_positions-12+i] = true;
+    x_manipuland_measured(manipuland->num_positions-12+i) = x_manipuland(manipuland->num_positions-12+i);
+  }
+*/
+
   latest_depth_image.resize(480, 640);
 
-  this->setupSubscriptions();
+  this->setupSubscriptions(state_channelname);
 
   visualizer = make_shared<Drake::BotVisualizer<Drake::RigidBodySystem::StateVector>>(make_shared<lcm::LCM>(lcm),manipuland);
 
@@ -224,14 +240,13 @@ void IRB140Estimator::update(double dt){
   bot_lcmgl_switch_buffer(lcmgl_manipuland_);  
 */
 
-  printf("Visualizing state:\n");
-  cout << x_manipuland.transpose() << endl;
+  //printf("Visualizing state:\n");
+  //cout << x_manipuland.transpose() << endl;
   visualizer->output(getUnixTime(), VectorXd(), x_manipuland);
 
   double now=getUnixTime();
   this->performCompleteICP(kinect2world, depth_image, full_cloud, points);
   printf("elapsed in articulated, constrainted ICP: %f\n", getUnixTime() - now);
-
 
   // visualize point cloud
   bot_lcmgl_point_size(lcmgl_lidar_, 4.5f);
@@ -253,6 +268,7 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
   VectorXd q_old = x_manipuland.block(0, 0, manipuland->num_positions, 1);
   manipuland_kinematics_cache.initialize(q_old);
   manipuland->doKinematics(manipuland_kinematics_cache);
+  double now;
 
   // set up a quadratic program:
   // 0.5 * x.' Q x + f.' x
@@ -265,344 +281,387 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
   Q.setZero();
   double K = 0.;
 
-  double ICP_WEIGHT = 1.0;
+  double ICP_WEIGHT = 1.0; // error is in meters
   double FREE_SPACE_WEIGHT = 0.00;
   double JOINT_LIMIT_WEIGHT = 0.0;
+  double JOINT_KNOWN_WEIGHT = 0.05; // error is in radians
+  double DYNAMICS_WEIGHT = 0.00001; // error is in radians
 
   /***********************************************
                 Articulated ICP 
     *********************************************/
-  double now = getUnixTime();
+  if (ICP_WEIGHT > 0){
+    now = getUnixTime();
 
-  VectorXd phi(points.cols());
-  Matrix3Xd normal(3, points.cols()), x(3, points.cols()), body_x(3, points.cols());
-  std::vector<int> body_idx(points.cols());
-  // project all cloud points onto the surface of the object positions
-  // via the last state estimate
-  double now1 = getUnixTime();
-  manipuland->signedDistances(manipuland_kinematics_cache, points,
-                       phi, normal, x, body_x, body_idx, false);
-  printf("SDF took %f\n", getUnixTime()-now1);
+    VectorXd phi(points.cols());
+    Matrix3Xd normal(3, points.cols()), x(3, points.cols()), body_x(3, points.cols());
+    std::vector<int> body_idx(points.cols());
+    // project all cloud points onto the surface of the object positions
+    // via the last state estimate
+    double now1 = getUnixTime();
+    manipuland->signedDistances(manipuland_kinematics_cache, points,
+                         phi, normal, x, body_x, body_idx, false);
+    printf("SDF took %f\n", getUnixTime()-now1);
 
-  // for every unique body points have returned onto...
-  std::vector<int> num_points_on_body(manipuland->bodies.size(), 0);
+    // for every unique body points have returned onto...
+    std::vector<int> num_points_on_body(manipuland->bodies.size(), 0);
 
-  for (int i=0; i < body_idx.size(); i++)
-    num_points_on_body[body_idx[i]] += 1;
+    for (int i=0; i < body_idx.size(); i++)
+      num_points_on_body[body_idx[i]] += 1;
 
-  // for every body...
-  for (int i=0; i < manipuland->bodies.size(); i++){
-    if (num_points_on_body[i] > 0){
-      // collect results from raycast that correspond to this sensor
-      Matrix3Xd z(3, num_points_on_body[i]); // points, in world frame, near this body
-      Matrix3Xd z_prime(3, num_points_on_body[i]); // same points projected onto surface of body
-      Matrix3Xd body_z_prime(3, num_points_on_body[i]); // projected points in body frame
-      Matrix3Xd z_norms(3, num_points_on_body[i]); // normals corresponding to these points
-      int k = 0;
-      for (int j=0; j < body_idx.size(); j++){
-        assert(k < body_idx.size());
-        if (body_idx[j] == i){
-          assert(j < points.cols());
-          if (points(0, j) == 0.0){
-            cout << "Zero points " << points.block<3, 1>(0, j).transpose() << " slipping in at bdyidx " << body_idx[j] << endl;
+    // for every body...
+    for (int i=0; i < manipuland->bodies.size(); i++){
+      if (num_points_on_body[i] > 0){
+        // collect results from raycast that correspond to this sensor
+        Matrix3Xd z(3, num_points_on_body[i]); // points, in world frame, near this body
+        Matrix3Xd z_prime(3, num_points_on_body[i]); // same points projected onto surface of body
+        Matrix3Xd body_z_prime(3, num_points_on_body[i]); // projected points in body frame
+        Matrix3Xd z_norms(3, num_points_on_body[i]); // normals corresponding to these points
+        int k = 0;
+        for (int j=0; j < body_idx.size(); j++){
+          assert(k < body_idx.size());
+          if (body_idx[j] == i){
+            assert(j < points.cols());
+            if (points(0, j) == 0.0){
+              cout << "Zero points " << points.block<3, 1>(0, j).transpose() << " slipping in at bdyidx " << body_idx[j] << endl;
+            }
+            z.block<3, 1>(0, k) = points.block<3, 1>(0, j);
+            z_prime.block<3, 1>(0, k) = x.block<3, 1>(0, j);
+            body_z_prime.block<3, 1>(0, k) = body_x.block<3, 1>(0, j);
+            z_norms.block<3, 1>(0, k) = normal.block<3, 1>(0, j);
+            k++;
           }
-          z.block<3, 1>(0, k) = points.block<3, 1>(0, j);
-          z_prime.block<3, 1>(0, k) = x.block<3, 1>(0, j);
-          body_z_prime.block<3, 1>(0, k) = body_x.block<3, 1>(0, j);
-          z_norms.block<3, 1>(0, k) = normal.block<3, 1>(0, j);
-          k++;
         }
-      }
 
-      // forwardkin to get our jacobians at the project points on the body
-      auto J = manipuland->transformPointsJacobian(manipuland_kinematics_cache, body_z_prime, i, 0, false);
+        // forwardkin to get our jacobians at the project points on the body
+        auto J = manipuland->transformPointsJacobian(manipuland_kinematics_cache, body_z_prime, i, 0, false);
 
-      // apply point-to-plane cost
-      // we're minimizing point-to-plane projected distance after moving the body config by delta_q
-      // i.e. (z - z_prime_new).' * n
-      //   =  (z - (z_prime + J*(q_new - q_old))) .' * n
-      //   =  (z - z_prime - J*(q_new - q_old))) .' * n
-      // Which, if we penalize quadratically, and expand out, removing constant terms, we get
-      // argmin_{qn}[ qn.' * (J.' * n * n.' * J) * qn +
-      //              - 2 * (Ks.' * n * n.' * J) ]
-      // for Ks = (z - z_prime + Jz*q_old)
+        // apply point-to-plane cost
+        // we're minimizing point-to-plane projected distance after moving the body config by delta_q
+        // i.e. (z - z_prime_new).' * n
+        //   =  (z - (z_prime + J*(q_new - q_old))) .' * n
+        //   =  (z - z_prime - J*(q_new - q_old))) .' * n
+        // Which, if we penalize quadratically, and expand out, removing constant terms, we get
+        // argmin_{qn}[ qn.' * (J.' * n * n.' * J) * qn +
+        //              - 2 * (Ks.' * n * n.' * J) ]
+        // for Ks = (z - z_prime + Jz*q_old)
 
-      bool POINT_TO_PLANE = false;
+        bool POINT_TO_PLANE = false;
 
-      for (int j=0; j < num_points_on_body[i]; j++){
-        MatrixXd Ks = z.col(j) - z_prime.col(j) + J.block(3*j, 0, 3, nq)*q_old;
-        if (POINT_TO_PLANE){
-          //cout << z_norms.col(j).transpose() << endl;
-          //cout << "Together: " << (z_norms.col(j) * z_norms.col(j).transpose()) << endl;
-          f -= ICP_WEIGHT*(2. * Ks.transpose() * (z_norms.col(j) * z_norms.col(j).transpose()) * J.block(3*j, 0, 3, nq)).transpose()  / points.cols();
-          Q += ICP_WEIGHT*(2. *  J.block(3*j, 0, 3, nq).transpose() * (z_norms.col(j) * z_norms.col(j).transpose()) * J.block(3*j, 0, 3, nq)) / points.cols();
-        } else {
-          f -= ICP_WEIGHT*(2. * Ks.transpose() * J.block(3*j, 0, 3, nq)).transpose()  / points.cols();
-          Q += ICP_WEIGHT*(2. *  J.block(3*j, 0, 3, nq).transpose() * J.block(3*j, 0, 3, nq)) / points.cols();
-        }
-        K += ICP_WEIGHT*Ks.squaredNorm() / points.cols();
-
-        if (j % 10 == 0){
-          // visualize point correspondences and normals
-          if (z(0, j) == 0.0){
-            cout << "Got zero z " << z.block<3, 1>(0, j).transpose() << " at z prime " << z_prime.block<3, 1>(0, j).transpose() << endl;
+        for (int j=0; j < num_points_on_body[i]; j++){
+          MatrixXd Ks = z.col(j) - z_prime.col(j) + J.block(3*j, 0, 3, nq)*q_old;
+          if (POINT_TO_PLANE){
+            //cout << z_norms.col(j).transpose() << endl;
+            //cout << "Together: " << (z_norms.col(j) * z_norms.col(j).transpose()) << endl;
+            // normalizing by points.cols() means total contribution will be normalized, but it
+            // will be distributed more heavily towards those bodies on which more points fell...
+            f -= ICP_WEIGHT*(2. * Ks.transpose() * (z_norms.col(j) * z_norms.col(j).transpose()) * J.block(3*j, 0, 3, nq)).transpose()  / (double) points.cols();
+            Q += ICP_WEIGHT*(2. *  J.block(3*j, 0, 3, nq).transpose() * (z_norms.col(j) * z_norms.col(j).transpose()) * J.block(3*j, 0, 3, nq))  / (double) points.cols();
+          } else {
+            f -= ICP_WEIGHT*(2. * Ks.transpose() * J.block(3*j, 0, 3, nq)).transpose()  / (double) points.cols();
+            Q += ICP_WEIGHT*(2. *  J.block(3*j, 0, 3, nq).transpose() * J.block(3*j, 0, 3, nq)) / (double) points.cols();
           }
-          double dist_normalized = fmin(1.0, (z.col(j) - z_prime.col(j)).norm());
-          bot_lcmgl_color3f(lcmgl_icp_, dist_normalized*dist_normalized, 0, (1.0-dist_normalized)*(1.0-dist_normalized));
-          
-          bot_lcmgl_begin(lcmgl_icp_, LCMGL_LINES);
-          bot_lcmgl_line_width(lcmgl_icp_, 2.0f);
-          bot_lcmgl_vertex3f(lcmgl_icp_, z(0, j), z(1, j), z(2, j));
-          bot_lcmgl_vertex3f(lcmgl_icp_, z_prime(0, j), z_prime(1, j), z_prime(2, j));
-          bot_lcmgl_end(lcmgl_icp_);  
+          K += ICP_WEIGHT*Ks.squaredNorm() / (double) points.cols();
 
-/*
-          bot_lcmgl_line_width(lcmgl_icp_, 1.0f);
-          bot_lcmgl_color3f(lcmgl_icp_, 1.0, 0.0, 1.0);
-          bot_lcmgl_begin(lcmgl_icp_, LCMGL_LINES);
-          bot_lcmgl_vertex3f(lcmgl_icp_, z_prime(0, j)+z_norms(0, j)*0.01, z_prime(1, j)+z_norms(1, j)*0.01, z_prime(2, j)+z_norms(2, j)*0.01);
-          bot_lcmgl_vertex3f(lcmgl_icp_, z_prime(0, j), z_prime(1, j), z_prime(2, j));
-          bot_lcmgl_end(lcmgl_icp_);  
-*/
+          if (j % 50 == 0){
+            // visualize point correspondences and normals
+            if (z(0, j) == 0.0){
+              cout << "Got zero z " << z.block<3, 1>(0, j).transpose() << " at z prime " << z_prime.block<3, 1>(0, j).transpose() << endl;
+            }
+            double dist_normalized = fmin(1.0, (z.col(j) - z_prime.col(j)).norm());
+            bot_lcmgl_color3f(lcmgl_icp_, dist_normalized*dist_normalized, 0, (1.0-dist_normalized)*(1.0-dist_normalized));
+            
+            bot_lcmgl_begin(lcmgl_icp_, LCMGL_LINES);
+            bot_lcmgl_line_width(lcmgl_icp_, 2.0f);
+            bot_lcmgl_vertex3f(lcmgl_icp_, z(0, j), z(1, j), z(2, j));
+            bot_lcmgl_vertex3f(lcmgl_icp_, z_prime(0, j), z_prime(1, j), z_prime(2, j));
+            bot_lcmgl_end(lcmgl_icp_);  
+
+  /*
+            bot_lcmgl_line_width(lcmgl_icp_, 1.0f);
+            bot_lcmgl_color3f(lcmgl_icp_, 1.0, 0.0, 1.0);
+            bot_lcmgl_begin(lcmgl_icp_, LCMGL_LINES);
+            bot_lcmgl_vertex3f(lcmgl_icp_, z_prime(0, j)+z_norms(0, j)*0.01, z_prime(1, j)+z_norms(1, j)*0.01, z_prime(2, j)+z_norms(2, j)*0.01);
+            bot_lcmgl_vertex3f(lcmgl_icp_, z_prime(0, j), z_prime(1, j), z_prime(2, j));
+            bot_lcmgl_end(lcmgl_icp_);  
+  */
+          }
         }
       }
     }
-  }
-  bot_lcmgl_switch_buffer(lcmgl_icp_);  
+    bot_lcmgl_switch_buffer(lcmgl_icp_);  
 
-  printf("Spend %f in Articulated ICP constraints.\n", getUnixTime() - now);
+    printf("Spend %f in Articulated ICP constraints.\n", getUnixTime() - now);
+  }
 
   /***********************************************
                 FREE SPACE CONSTRAINT
     *********************************************/
-  now = getUnixTime();
+  if (FREE_SPACE_WEIGHT > 0){
+    now = getUnixTime();
 
-/*
-  // calculate SDFs in the image plane (not voxel grid like DART... too expensive
-  // since we're not on a GPU yet)
+    // calculate SDFs in the image plane (not voxel grid like DART... too expensive
+    // since we're not on a GPU yet)
 
-  // perform raycast to generate "expected" observation
-  // (borrowing code from Matthew Woehlke's pull request for the moment here)
-  VectorXd distances(raycast_endpoints.cols());
-  Vector3d origin = kinect2world*Vector3d::Zero();
-  Matrix3Xd origins(3, raycast_endpoints.cols());
-  Matrix3Xd normals(3, raycast_endpoints.cols());
-  body_idx.resize(raycast_endpoints.cols());
-  for (int i=0; i < raycast_endpoints.cols(); i++)
-    origins.block<3, 1>(0, i) = origin;
+    // perform raycast to generate "expected" observation
+    // (borrowing code from Matthew Woehlke's pull request for the moment here)
+    VectorXd distances(raycast_endpoints.cols());
+    Vector3d origin = kinect2world*Vector3d::Zero();
+    Matrix3Xd origins(3, raycast_endpoints.cols());
+    Matrix3Xd normals(3, raycast_endpoints.cols());
+    std::vector<int> body_idx(raycast_endpoints.cols());
+    for (int i=0; i < raycast_endpoints.cols(); i++)
+      origins.block<3, 1>(0, i) = origin;
 
-  Matrix3Xd raycast_endpoints_world = kinect2world*raycast_endpoints;
-  double before_raycast = getUnixTime();
-  manipuland->collisionRaycast(manipuland_kinematics_cache,origins,raycast_endpoints_world,distances,normals,body_idx);
-  printf("Raycast took %f\n", getUnixTime() - before_raycast);
+    Matrix3Xd raycast_endpoints_world = kinect2world*raycast_endpoints;
+    double before_raycast = getUnixTime();
+    manipuland->collisionRaycast(manipuland_kinematics_cache,origins,raycast_endpoints_world,distances,normals,body_idx);
+    printf("Raycast took %f\n", getUnixTime() - before_raycast);
 
-  // initialize observation SDF to Inf where the measurement return is in front of the real return
-  // and 0 otherwise
-  Eigen::MatrixXd observation_sdf_input = MatrixXd::Constant(num_pixel_rows, num_pixel_cols, 0.0);
-  for (int i=0; i<num_pixel_rows; i++) {
-    for (int j=0; j<num_pixel_cols; j++) {
-      if (i < depth_image.rows() && j < depth_image.cols() && 
-        distances(i*num_pixel_cols + j) > 0. && 
-        distances(i*num_pixel_cols + j) < depth_image(i, j)){
-        observation_sdf_input(i, j) = INF;
+    // initialize observation SDF to Inf where the measurement return is in front of the real return
+    // and 0 otherwise
+    Eigen::MatrixXd observation_sdf_input = MatrixXd::Constant(num_pixel_rows, num_pixel_cols, 0.0);
+    for (int i=0; i<num_pixel_rows; i++) {
+      for (int j=0; j<num_pixel_cols; j++) {
+        if (i < depth_image.rows() && j < depth_image.cols() && 
+          distances(i*num_pixel_cols + j) > 0. && 
+          distances(i*num_pixel_cols + j) < depth_image(i, j)){
+          observation_sdf_input(i, j) = INF;
+        }
+  //      int thisind = i*num_pixel_cols+j;
+  //      if (j % 20 == 0 && distances(thisind) > 0.){
+  //        Vector3d endpt = kinect2world*(raycast_endpoints.col(thisind)*distances(thisind)/30.); //warning, hardcoded scan max dist
+  //        Vector3d endpt2 = kinect2world*Vector3d( (((double) j)- kcal->intrinsics_depth.cx)*depth_image(i, j) / kcal->intrinsics_rgb.fx,
+  //                        (((double) i)- kcal->intrinsics_depth.cy)*depth_image(i, j) / kcal->intrinsics_rgb.fx,
+  //                        depth_image(i, j));
+  //
+  //        bot_lcmgl_begin(lcmgl_measurement_model_, LCMGL_LINES);
+  //        bot_lcmgl_color3f(lcmgl_measurement_model_, 0, 1, 0);  
+  //        bot_lcmgl_vertex3f(lcmgl_measurement_model_, endpt(0), endpt(1), endpt(2));
+  //       //bot_lcmgl_color3f(lcmgl_measurement_model_, 1, 0, 0);  
+  //        bot_lcmgl_vertex3f(lcmgl_measurement_model_, endpt2(0), endpt2(1), endpt2(2));
+  //        bot_lcmgl_end(lcmgl_measurement_model_);  
+  //      }
+
       }
-//      int thisind = i*num_pixel_cols+j;
-//      if (j % 20 == 0 && distances(thisind) > 0.){
-//        Vector3d endpt = kinect2world*(raycast_endpoints.col(thisind)*distances(thisind)/30.); //warning, hardcoded scan max dist
-//        Vector3d endpt2 = kinect2world*Vector3d( (((double) j)- kcal->intrinsics_depth.cx)*depth_image(i, j) / kcal->intrinsics_rgb.fx,
-//                        (((double) i)- kcal->intrinsics_depth.cy)*depth_image(i, j) / kcal->intrinsics_rgb.fx,
-//                        depth_image(i, j));
-//
-//        bot_lcmgl_begin(lcmgl_measurement_model_, LCMGL_LINES);
-//        bot_lcmgl_color3f(lcmgl_measurement_model_, 0, 1, 0);  
-//        bot_lcmgl_vertex3f(lcmgl_measurement_model_, endpt(0), endpt(1), endpt(2));
-//       //bot_lcmgl_color3f(lcmgl_measurement_model_, 1, 0, 0);  
-//        bot_lcmgl_vertex3f(lcmgl_measurement_model_, endpt2(0), endpt2(1), endpt2(2));
-//        bot_lcmgl_end(lcmgl_measurement_model_);  
-//      }
-
     }
-  }
-  MatrixXd observation_sdf;
-  MatrixXi mapping_row;
-  MatrixXi mapping_col;
+    MatrixXd observation_sdf;
+    MatrixXi mapping_row;
+    MatrixXi mapping_col;
 
-  df_2d(observation_sdf_input, observation_sdf, mapping_row, mapping_col);
-  for (size_t i=0; i<num_pixel_rows; i++) {
-    for (size_t j=0; j<num_pixel_cols; j++) {
-      observation_sdf(i, j) = sqrtf(observation_sdf(i, j));
+    df_2d(observation_sdf_input, observation_sdf, mapping_row, mapping_col);
+    for (size_t i=0; i<num_pixel_rows; i++) {
+      for (size_t j=0; j<num_pixel_cols; j++) {
+        observation_sdf(i, j) = sqrtf(observation_sdf(i, j));
+      }
     }
-  }
 
-  Mat image;
-  Mat image_bg;
-  eigen2cv(observation_sdf, image);
-  eigen2cv(depth_image, image_bg);
-  double min, max;
-  minMaxIdx(image, &min, &max);
-  if (max > 0)
-    image = image / max;
-  minMaxIdx(image_bg, &min, &max);
-  if (max > 0)
-    image_bg = image_bg / max;
-  Mat image_disp;
-  addWeighted(image, 1.0, image_bg, 0.0, 0.0, image_disp);
-  imshow("IRB140EstimatorDebug", image_disp);
+    Mat image;
+    Mat image_bg;
+    eigen2cv(observation_sdf, image);
+    eigen2cv(depth_image, image_bg);
+    double min, max;
+    minMaxIdx(image, &min, &max);
+    if (max > 0)
+      image = image / max;
+    minMaxIdx(image_bg, &min, &max);
+    if (max > 0)
+      image_bg = image_bg / max;
+    Mat image_disp;
+    addWeighted(image, 1.0, image_bg, 0.0, 0.0, image_disp);
+    imshow("IRB140EstimatorDebug", image_disp);
 
-  // calculate projection direction to try to resolve this.
-  // following Ganapathi / Thrun 2010, we'll do this by balancing
-  // projection in two directions: perpendicular to raycast, and
-  // then along it.
+    // calculate projection direction to try to resolve this.
+    // following Ganapathi / Thrun 2010, we'll do this by balancing
+    // projection in two directions: perpendicular to raycast, and
+    // then along it.
 
-  double constant = 1.0f / kcal->intrinsics_rgb.fx ;
-  // for every unique body points have returned onto...
-  std::fill(num_points_on_body.begin(), num_points_on_body.end(), 0);
-  for (int bdy_i=0; bdy_i < body_idx.size(); bdy_i++){
-    if (body_idx[bdy_i] >= 0)
-      num_points_on_body[body_idx[bdy_i]] += 1;
-  }
+    double constant = 1.0f / kcal->intrinsics_rgb.fx ;
+    // for every unique body points have returned onto...
+    std::vector<int> num_points_on_body(manipuland->bodies.size(), 0);
+    for (int bdy_i=0; bdy_i < body_idx.size(); bdy_i++){
+      if (body_idx[bdy_i] >= 0)
+        num_points_on_body[body_idx[bdy_i]] += 1;
+    }
 
-  // for every body...
-  for (int bdy_i=0; bdy_i < manipuland->bodies.size(); bdy_i++){
-    // assemble correction vectors and points for this body
-    if (num_points_on_body[bdy_i] > 0){
-      int k = 0;
+    // for every body...
+    for (int bdy_i=0; bdy_i < manipuland->bodies.size(); bdy_i++){
+      // assemble correction vectors and points for this body
+      if (num_points_on_body[bdy_i] > 0){
+        int k = 0;
 
-      // collect simulated depth points, and the corrected points 
-      // based on depth map laterally and longitudinally
-      Matrix3Xd z(3, num_points_on_body[bdy_i]);
-      Matrix3Xd z_corrected_depth = MatrixXd::Constant(3, num_points_on_body[bdy_i], 0.0);
-      Matrix3Xd z_corrected_lateral = MatrixXd::Constant(3, num_points_on_body[bdy_i], 0.0);
-      std::vector<bool> depth_correction(num_points_on_body[bdy_i]);
+        // collect simulated depth points, and the corrected points 
+        // based on depth map laterally and longitudinally
+        Matrix3Xd z(3, num_points_on_body[bdy_i]);
+        Matrix3Xd z_corrected_depth = MatrixXd::Constant(3, num_points_on_body[bdy_i], 0.0);
+        Matrix3Xd z_corrected_lateral = MatrixXd::Constant(3, num_points_on_body[bdy_i], 0.0);
+        std::vector<bool> depth_correction(num_points_on_body[bdy_i]);
 
-      for (int i=0; i<num_pixel_rows; i++) {
-        for (int j=0; j<num_pixel_cols; j++) {
-          long int thisind = i*num_pixel_cols + j;
-          if (body_idx[thisind] == bdy_i){
-            // project depth into world:
-            Vector3d endpt = origin + distances(thisind) * (raycast_endpoints_world.block<3, 1>(0, thisind) - origin)/30.; //warning, hardcoded scan max dist
+        for (int i=0; i<num_pixel_rows; i++) {
+          for (int j=0; j<num_pixel_cols; j++) {
+            long int thisind = i*num_pixel_cols + j;
+            if (body_idx[thisind] == bdy_i){
+              // project depth into world:
+              Vector3d endpt = origin + distances(thisind) * (raycast_endpoints_world.block<3, 1>(0, thisind) - origin)/30.; //warning, hardcoded scan max dist
 
-            // Lateral correction
-            if (observation_sdf(thisind) > 0.0 && observation_sdf(thisind) < INF && (observation_sdf(thisind) < fabs(distances[thisind] - depth_image(i, j))) ) {
-              Vector3d camera_correction_vector;
-              camera_correction_vector(0) = ((double)(j - mapping_col(i, j)))*distances(thisind)*constant;
-              camera_correction_vector(1) = ((double)(i - mapping_row(i, j)))*distances(thisind)*constant;
-              camera_correction_vector(2) = 0.0;
-              Vector3d world_correction_vector = kinect2world.rotation()*camera_correction_vector;
-              z_corrected_lateral.block<3,1>(0, k) = endpt + world_correction_vector;
-              z.block<3, 1>(0, k) = endpt;
-              depth_correction[k] = false;
-              k++;
+              // Lateral correction
+              if (observation_sdf(thisind) > 0.0 && observation_sdf(thisind) < INF && (observation_sdf(thisind) < fabs(distances[thisind] - depth_image(i, j))) ) {
+                Vector3d camera_correction_vector;
+                camera_correction_vector(0) = ((double)(j - mapping_col(i, j)))*distances(thisind)*constant;
+                camera_correction_vector(1) = ((double)(i - mapping_row(i, j)))*distances(thisind)*constant;
+                camera_correction_vector(2) = 0.0;
+                Vector3d world_correction_vector = kinect2world.rotation()*camera_correction_vector;
+                z_corrected_lateral.block<3,1>(0, k) = endpt + world_correction_vector;
+                z.block<3, 1>(0, k) = endpt;
+                depth_correction[k] = false;
+                k++;
 
-              if (thisind % 10 == 0){
-                bot_lcmgl_begin(lcmgl_measurement_model_, LCMGL_LINES);
-                bot_lcmgl_line_width(lcmgl_measurement_model_, 1.0f);
-                bot_lcmgl_color3f(lcmgl_measurement_model_, 1, 0, 0);  
-                bot_lcmgl_vertex3f(lcmgl_measurement_model_, endpt(0), endpt(1), endpt(2));
-                bot_lcmgl_vertex3f(lcmgl_measurement_model_, endpt(0)+world_correction_vector(0), endpt(1)+world_correction_vector(1), endpt(2)+world_correction_vector(2));
-                bot_lcmgl_end(lcmgl_measurement_model_);  
-              }
-            } 
-            // Depth correction term
-            else if (distances[thisind] > 0. && distances[thisind] < depth_image(i, j) && fabs(distances[thisind] - depth_image(i, j)) < 0.1 ){
-              // simply push back to "correct" depth
-              // todo: recover this from point cloud instead..
-              //printf("raycast %f vs distance %f\n", distances[thisind], depth_image(i, j));
-              Vector3d corrected_endpt = origin + depth_image(i, j) * (raycast_endpoints_world.block<3, 1>(0, thisind) - origin) / 30.;
+                if (thisind % 10 == 0){
+                  bot_lcmgl_begin(lcmgl_measurement_model_, LCMGL_LINES);
+                  bot_lcmgl_line_width(lcmgl_measurement_model_, 1.0f);
+                  bot_lcmgl_color3f(lcmgl_measurement_model_, 1, 0, 0);  
+                  bot_lcmgl_vertex3f(lcmgl_measurement_model_, endpt(0), endpt(1), endpt(2));
+                  bot_lcmgl_vertex3f(lcmgl_measurement_model_, endpt(0)+world_correction_vector(0), endpt(1)+world_correction_vector(1), endpt(2)+world_correction_vector(2));
+                  bot_lcmgl_end(lcmgl_measurement_model_);  
+                }
+              } 
+              // Depth correction term
+              else if (distances[thisind] > 0. && distances[thisind] < depth_image(i, j) && fabs(distances[thisind] - depth_image(i, j)) < 0.1 ){
+                // simply push back to "correct" depth
+                // todo: recover this from point cloud instead..
+                //printf("raycast %f vs distance %f\n", distances[thisind], depth_image(i, j));
+                Vector3d corrected_endpt = origin + depth_image(i, j) * (raycast_endpoints_world.block<3, 1>(0, thisind) - origin) / 30.;
 
-              z_corrected_depth.block<3,1>(0, k) = corrected_endpt;
-              z.block<3, 1>(0, k) = endpt;
-              depth_correction[k] = true;
-              k++;
+                z_corrected_depth.block<3,1>(0, k) = corrected_endpt;
+                z.block<3, 1>(0, k) = endpt;
+                depth_correction[k] = true;
+                k++;
 
-              if (thisind % 10 == 0){
-                bot_lcmgl_begin(lcmgl_measurement_model_, LCMGL_LINES);
-                bot_lcmgl_line_width(lcmgl_measurement_model_, 1.0f);
-                bot_lcmgl_color3f(lcmgl_measurement_model_, 0, 1, 0);  
-                bot_lcmgl_vertex3f(lcmgl_measurement_model_, endpt(0), endpt(1), endpt(2));
-                bot_lcmgl_vertex3f(lcmgl_measurement_model_, corrected_endpt(0), corrected_endpt(1), corrected_endpt(2));
-                bot_lcmgl_end(lcmgl_measurement_model_);
+                if (thisind % 10 == 0){
+                  bot_lcmgl_begin(lcmgl_measurement_model_, LCMGL_LINES);
+                  bot_lcmgl_line_width(lcmgl_measurement_model_, 1.0f);
+                  bot_lcmgl_color3f(lcmgl_measurement_model_, 0, 1, 0);  
+                  bot_lcmgl_vertex3f(lcmgl_measurement_model_, endpt(0), endpt(1), endpt(2));
+                  bot_lcmgl_vertex3f(lcmgl_measurement_model_, corrected_endpt(0), corrected_endpt(1), corrected_endpt(2));
+                  bot_lcmgl_end(lcmgl_measurement_model_);
+                }
               }
             }
           }
         }
-      }
 
-      z.conservativeResize(3, k);
-      z_corrected_depth.conservativeResize(3, k);
-      z_corrected_lateral.conservativeResize(3, k);
+        z.conservativeResize(3, k);
+        z_corrected_depth.conservativeResize(3, k);
+        z_corrected_lateral.conservativeResize(3, k);
 
-      // now do an icp step attempting to resolve said constraints
-      
-      // forwardkin the points in the body frame
-      Matrix3Xd z_body = manipuland->transformPoints(manipuland_kinematics_cache, z, 0, bdy_i);
-      // forwardkin to get our jacobians at the project points on the body
-      auto J = manipuland->transformPointsJacobian(manipuland_kinematics_cache, z_body, bdy_i, 0, false);
+        // now do an icp step attempting to resolve said constraints
+        
+        // forwardkin the points in the body frame
+        Matrix3Xd z_body = manipuland->transformPoints(manipuland_kinematics_cache, z, 0, bdy_i);
+        // forwardkin to get our jacobians at the project points on the body
+        auto J = manipuland->transformPointsJacobian(manipuland_kinematics_cache, z_body, bdy_i, 0, false);
 
-      for (int j=0; j < z.cols(); j++){
-        MatrixXd Ks(3, 1);
-        if (depth_correction[j]){
-          Ks = z_corrected_depth.col(j) - z.col(j) + J.block(3*j, 0, 3, nq)*q_old;
-        } else {
-          Ks = z_corrected_lateral.col(j) - z.col(j)+ J.block(3*j, 0, 3, nq)*q_old;
+        for (int j=0; j < z.cols(); j++){
+          MatrixXd Ks(3, 1);
+          printf("TODO: check normalization\n");
+          if (depth_correction[j]){
+            Ks = z_corrected_depth.col(j) - z.col(j) + J.block(3*j, 0, 3, nq)*q_old;
+          } else {
+            Ks = z_corrected_lateral.col(j) - z.col(j)+ J.block(3*j, 0, 3, nq)*q_old;
+          }
+          f -= FREE_SPACE_WEIGHT*(2. * Ks.transpose() * J.block(3*j, 0, 3, nq)).transpose()  / (double)z.cols();
+          Q += FREE_SPACE_WEIGHT*(2. *  J.block(3*j, 0, 3, nq).transpose() * J.block(3*j, 0, 3, nq)) / (double)z.cols();
+          K += FREE_SPACE_WEIGHT*Ks.squaredNorm() / z.cols();
         }
-        f -= FREE_SPACE_WEIGHT*(2. * Ks.transpose() * J.block(3*j, 0, 3, nq)).transpose()  / (double)z.cols();
-        Q += FREE_SPACE_WEIGHT*(2. *  J.block(3*j, 0, 3, nq).transpose() * J.block(3*j, 0, 3, nq)) / (double)z.cols();
-        K += FREE_SPACE_WEIGHT*Ks.squaredNorm() / z.cols();
+        
       }
-      
     }
+
+    bot_lcmgl_point_size(lcmgl_measurement_model_, 4.0f);
+    bot_lcmgl_color3f(lcmgl_measurement_model_, 0, 0, 1);  
+    bot_lcmgl_begin(lcmgl_measurement_model_, LCMGL_POINTS);
+    for (int i = 0; i < distances.rows(); i++){
+      if (i % 10 == 0){
+        Vector3d endpt = origin + distances(i) * (raycast_endpoints_world.block<3, 1>(0, i) - origin)/30.; //warning, hardcoded scan max dist
+        if (endpt(0) > manip_x_bounds[0] && endpt(0) < manip_x_bounds[1] && 
+            endpt(1) > manip_y_bounds[0] && endpt(1) < manip_y_bounds[1] && 
+            endpt(2) > manip_z_bounds[0] && endpt(2) < manip_z_bounds[1] &&
+            (1 || observation_sdf(i) > 0.0 && observation_sdf(i) < INF)) {
+          bot_lcmgl_vertex3f(lcmgl_measurement_model_, endpt(0), endpt(1), endpt(2));
+        }
+      }
+    }
+    bot_lcmgl_end(lcmgl_measurement_model_);
+    bot_lcmgl_switch_buffer(lcmgl_measurement_model_);  
+
+    printf("Spend %f in free space constraints.\n", getUnixTime() - now);
   }
-*/
-  printf("Spend %f in free space constraints.\n", getUnixTime() - now);
+
+  /***********************************************
+                DYNAMICS HINTS
+    *********************************************/
+  if (DYNAMICS_WEIGHT > 0){
+    now = getUnixTime();
+    // for now, foh on dynamics
+    // min (x - x')^2
+    // i.e. min x^2 - 2xx' + x'^2
+    for (int i=0; i<q_old.rows(); i++){
+      Q(i, i) += DYNAMICS_WEIGHT*1.0;
+      f(i) -= DYNAMICS_WEIGHT*q_old(i);
+      K += DYNAMICS_WEIGHT*q_old(i)*q_old(i);
+    }
+    printf("Spent %f in joint known weight constraints.\n", getUnixTime() - now);
+  }
+
+
+  /***********************************************
+                KNOWN POSITION HINTS
+    *********************************************/
+  if (JOINT_KNOWN_WEIGHT > 0){
+    now = getUnixTime();
+    // min (x - x')^2
+    // i.e. min x^2 - 2xx' + x'^2
+    x_manipuland_measured_mutex.lock();
+    VectorXd q_measured = x_manipuland_measured.block(0,0,nq,1);
+    std::vector<bool> x_manipuland_measured_known_copy = x_manipuland_measured_known;
+    x_manipuland_measured_mutex.unlock();
+    for (int i=0; i<q_old.rows(); i++){
+      if (x_manipuland_measured_known_copy[i]){
+        Q(i, i) += JOINT_KNOWN_WEIGHT*1.0;
+        f(i) -= JOINT_KNOWN_WEIGHT*q_measured(i);
+        K += JOINT_KNOWN_WEIGHT*q_measured(i)*q_measured(i);
+      }
+    }
+    printf("Spent %f in joint known weight constraints.\n", getUnixTime() - now);
+  }
 
   /***********************************************
                 JOINT LIMIT CONSTRAINTS
     *********************************************/
-
-  // push negative ones back towards their limits
-  // phi_jl(i) = J_jl(i,i)*(x - lim)
-  // (back out lim = x - phi_jl(i)/J_jl(i,i)
-  // min phi_li^2 if phi_jl < 0, so
-  // min (J_jl(i,i)*(x-lim))^2
-  // min x^2 - 2 * lim * x + lim^2
-  /*
-  for (int i=0; i<q_old.rows(); i++){
-    printf("Ind %d: %f <= %f <= %f | ", i, manipuland->joint_limit_min[i], q_old[i], manipuland->joint_limit_max[i]);
-    if (isfinite(manipuland->joint_limit_min[i]) && q_old[i] < manipuland->joint_limit_min[i]){
-      printf(" joint limit min trig");
-      Q(i, i) += JOINT_LIMIT_WEIGHT*1.0;
-      f(i) -= JOINT_LIMIT_WEIGHT*manipuland->joint_limit_min[i]*q_old[i];
-      K += JOINT_LIMIT_WEIGHT*manipuland->joint_limit_min[i]*manipuland->joint_limit_min[i];
-    }
-    if (isfinite(manipuland->joint_limit_max[i]) && q_old[i] > manipuland->joint_limit_max[i]){
-      printf(" joint limit max triggered");
-      Q(i, i) += JOINT_LIMIT_WEIGHT*1.0;
-      f(i) -= JOINT_LIMIT_WEIGHT*manipuland->joint_limit_max[i]*q_old[i];
-      K += JOINT_LIMIT_WEIGHT*manipuland->joint_limit_max[i]*manipuland->joint_limit_max[i];
-    }
-    printf("\n");
-  }
-
-  bot_lcmgl_point_size(lcmgl_measurement_model_, 4.0f);
-  bot_lcmgl_color3f(lcmgl_measurement_model_, 0, 0, 1);  
-  bot_lcmgl_begin(lcmgl_measurement_model_, LCMGL_POINTS);
-  for (int i = 0; i < distances.rows(); i++){
-    if (i % 10 == 0){
-      Vector3d endpt = origin + distances(i) * (raycast_endpoints_world.block<3, 1>(0, i) - origin)/30.; //warning, hardcoded scan max dist
-      if (endpt(0) > manip_x_bounds[0] && endpt(0) < manip_x_bounds[1] && 
-          endpt(1) > manip_y_bounds[0] && endpt(1) < manip_y_bounds[1] && 
-          endpt(2) > manip_z_bounds[0] && endpt(2) < manip_z_bounds[1] &&
-          (1 || observation_sdf(i) > 0.0 && observation_sdf(i) < INF)) {
-        bot_lcmgl_vertex3f(lcmgl_measurement_model_, endpt(0), endpt(1), endpt(2));
+  if (JOINT_LIMIT_WEIGHT > 0){
+    now = getUnixTime();
+    // push negative ones back towards their limits
+    // phi_jl(i) = J_jl(i,i)*(x - lim)
+    // (back out lim = x - phi_jl(i)/J_jl(i,i)
+    // min phi_li^2 if phi_jl < 0, so
+    // min (J_jl(i,i)*(x-lim))^2
+    // min x^2 - 2 * lim * x + lim^2
+    for (int i=0; i<q_old.rows(); i++){
+      if (isfinite(manipuland->joint_limit_min[i]) && q_old[i] < manipuland->joint_limit_min[i]){
+        Q(i, i) += JOINT_LIMIT_WEIGHT*1.0;
+        f(i) -= JOINT_LIMIT_WEIGHT*manipuland->joint_limit_min[i];
+        K += JOINT_LIMIT_WEIGHT*manipuland->joint_limit_min[i]*manipuland->joint_limit_min[i];
+      }
+      if (isfinite(manipuland->joint_limit_max[i]) && q_old[i] > manipuland->joint_limit_max[i]){
+        Q(i, i) += JOINT_LIMIT_WEIGHT*1.0;
+        f(i) -= JOINT_LIMIT_WEIGHT*manipuland->joint_limit_max[i];
+        K += JOINT_LIMIT_WEIGHT*manipuland->joint_limit_max[i]*manipuland->joint_limit_max[i];
       }
     }
+    printf("Spent %f in joint limit constraints.\n", getUnixTime() - now);
   }
-  bot_lcmgl_end(lcmgl_measurement_model_);
-  bot_lcmgl_switch_buffer(lcmgl_measurement_model_);  
-
-  */
-  /***********************************************
+  /*********************
+  **************************
                        SOLVE
     *********************************************/
 
@@ -612,15 +671,16 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
     //cout << "K: " << K << endl;
     // Solve the unconstrained QP!
     VectorXd q_new = Q.colPivHouseholderQr().solve(-f);
-    //cout << "q_new: " << q_new.transpose() << endl;
+    cout << "q_new: " << q_new.transpose() << endl;
 
     // apply joint lim
+    /*
     for (int i=0; i<q_new.rows(); i++){
       if (isfinite(manipuland->joint_limit_min[i]))
         q_new[i] = fmax(manipuland->joint_limit_min[i], q_new[i]);
       if (isfinite(manipuland->joint_limit_max[i]))
         q_new[i] = fmin(manipuland->joint_limit_max[i], q_new[i]);
-    }
+    }*/
     
 
     x_manipuland.block(0, 0, nq, 1) = q_new; //x_manipuland.block(0, 0, nq, 1)*0.5 + 0.5*q_new;
@@ -628,11 +688,15 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
 
 }
 
-void IRB140Estimator::setupSubscriptions(){
+void IRB140Estimator::setupSubscriptions(const char* state_channelname){
   //lcm->subscribe("SCAN", &IRB140EstimatorSystem::handlePointlatest_cloud, this);
   //lcm.subscribe("SCAN", &IRB140Estimator::handlePlanarLidarMsg, this);
   //lcm.subscribe("PRE_SPINDLE_TO_POST_SPINDLE", &IRB140Estimator::handleSpindleFrameMsg, this);
-  lcm.subscribe("KINECT_FRAME", &IRB140Estimator::handleKinectFrameMsg, this);
+  auto kinect_frame_sub = lcm.subscribe("KINECT_FRAME", &IRB140Estimator::handleKinectFrameMsg, this);
+  kinect_frame_sub->setQueueCapacity(1);
+  auto state_sub = lcm.subscribe(state_channelname, &IRB140Estimator::handleRobotStateMsg, this);
+  state_sub->setQueueCapacity(1);
+
 }
 
 void IRB140Estimator::handlePlanarLidarMsg(const lcm::ReceiveBuffer* rbuf,
@@ -656,6 +720,38 @@ void IRB140Estimator::handleSpindleFrameMsg(const lcm::ReceiveBuffer* rbuf,
   cout << msg->trans << "," << msg->quat << endl;
   // todo: transform them all by the lidar frame
 }
+
+
+void IRB140Estimator::handleRobotStateMsg(const lcm::ReceiveBuffer* rbuf,
+                         const std::string& chan,
+                         const drc::robot_state_t* msg){
+  printf("Received robot state on channel  %s\n", chan.c_str());
+  x_manipuland_measured_mutex.lock();
+
+  if (transcribe_published_floating_base){
+    x_manipuland_measured(0) = msg->pose.translation.x;
+    x_manipuland_measured(1) = msg->pose.translation.y;
+    x_manipuland_measured(2) = msg->pose.translation.z;
+
+    auto quat = Quaterniond(msg->pose.rotation.w, msg->pose.rotation.x, msg->pose.rotation.y, msg->pose.rotation.z);
+    x_manipuland_measured.block<3, 1>(3, 0) = quat.toRotationMatrix().eulerAngles(2, 1, 0);
+  }
+  for (int i=0; i < 6; i++)
+    x_manipuland_measured_known[i] = true;
+
+  map<string, int> map = manipuland->computePositionNameToIndexMap();
+  for (int i=0; i < msg->num_joints; i++){
+    auto id = map.find(msg->joint_name[i]);
+    if (id != map.end()){
+      x_manipuland_measured(id->second) = msg->joint_position[i];
+      x_manipuland_measured_known[id->second] = true;
+    }
+  }
+
+  x_manipuland_measured_mutex.unlock();
+
+}
+
 
 void IRB140Estimator::handleKinectFrameMsg(const lcm::ReceiveBuffer* rbuf,
                            const std::string& chan,
@@ -698,25 +794,29 @@ void IRB140Estimator::handleKinectFrameMsg(const lcm::ReceiveBuffer* rbuf,
     // 1.2.2 unpack raw byte data into float values in mm
 
     // NB: no depth return is given 0 range - and becomes 0,0,0 here
-    latest_cloud.width    = msg->depth.width;
-    latest_cloud.height   = msg->depth.height; 
+    latest_cloud.width    = num_pixel_cols;
+    latest_cloud.height   = num_pixel_rows; 
     latest_cloud.is_dense = false;
     latest_cloud.points.resize (latest_cloud.width * latest_cloud.height);
-    if (latest_depth_image.cols() != msg->depth.width && latest_depth_image.rows() != msg->depth.height){
-      latest_depth_image.resize(msg->depth.height, msg->depth.width);
+
+    if (latest_depth_image.cols() != latest_cloud.width && latest_depth_image.rows() != latest_cloud.height){
+      latest_depth_image.resize(latest_cloud.height, latest_cloud.width);
     }
+
     latest_depth_image.setZero();
     int j2=0;
-    for(int v=0; v<msg->depth.height; v++) { // t2b self->height 480
-      for(int u=0; u<msg->depth.width; u++ ) {  //l2r self->width 640
+    for(int v=0; v<latest_cloud.height; v++) { // t2b self->height 480
+      for(int u=0; u<latest_cloud.width; u++ ) {  //l2r self->width 640
         // not dealing with color yet
 
         double constant = 1.0f / kcal->intrinsics_rgb.fx ;
-        double disparity_d = depth_data[v*msg->depth.width+u]  / 1000.; // convert to m
+        int full_v = floor(((double)v)*downsample_amount);
+        int full_u = floor(((double)u)*downsample_amount);
+        double disparity_d = depth_data[full_v*msg->depth.width+full_u]  / 1000.; // convert to m
 
         if (disparity_d!=0){
-          latest_cloud.points[j2].x = (((double) u)- kcal->intrinsics_depth.cx)*disparity_d*constant; //x right+
-          latest_cloud.points[j2].y = (((double) v)- kcal->intrinsics_depth.cy)*disparity_d*constant; //y down+
+          latest_cloud.points[j2].x = (((double) full_u)- kcal->intrinsics_depth.cx)*disparity_d*constant; //x right+
+          latest_cloud.points[j2].y = (((double) full_v)- kcal->intrinsics_depth.cy)*disparity_d*constant; //y down+
           latest_cloud.points[j2].z = disparity_d;  //z forward+
           latest_depth_image(v, u) = disparity_d;
           j2++;

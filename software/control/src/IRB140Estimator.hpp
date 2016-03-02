@@ -5,6 +5,7 @@
 #include <iostream>
 #include <lcm/lcm-cpp.hpp>
 
+#include <sys/select.h>
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
@@ -14,6 +15,7 @@
 #include "bot_core/rigid_transform_t.hpp"
 #include "lcmtypes/drake/lcmt_point_cloud.hpp"
 #include "lcmtypes/kinect/frame_msg_t.hpp"
+#include "lcmtypes/drc/robot_state_t.hpp"
 #include <kinect/kinect-utils.h>
 #include "pcl/point_cloud.h"
 #include "pcl/common/transforms.h"
@@ -37,10 +39,12 @@ public:
   ~IRB140Estimator() {}
 
   IRB140Estimator(std::shared_ptr<RigidBodyTree> arm, std::shared_ptr<RigidBodyTree> manipuland, Eigen::Matrix<double, Eigen::Dynamic, 1> x0_arm, 
-    Eigen::Matrix<double, Eigen::Dynamic, 1> x0_manipuland, const char* filename);
+    Eigen::Matrix<double, Eigen::Dynamic, 1> x0_manipuland, const char* filename, const char* state_channelname,
+    bool transcribe_published_floating_base);
   void run() {
     while(1){
       this->lcm.handleTimeout(0);
+
       double dt = getUnixTime() - last_update_time;
       if (dt > timestep){
         last_update_time = getUnixTime();
@@ -52,7 +56,7 @@ public:
   void update(double dt);
   void performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen::MatrixXd& depth_image, pcl::PointCloud<pcl::PointXYZRGB>& full_cloud, Eigen::Matrix3Xd& points);
 
-  void setupSubscriptions();
+  void setupSubscriptions(const char* state_channelname);
   void initBotConfig(const char* filename);
   int get_trans_with_utime(std::string from_frame, std::string to_frame,
                                long long utime, Eigen::Isometry3d & mat);
@@ -73,6 +77,10 @@ public:
                            const std::string& chan,
                            const kinect::frame_msg_t* msg);
 
+  void handleRobotStateMsg(const lcm::ReceiveBuffer* rbuf,
+                           const std::string& chan,
+                           const drc::robot_state_t* msg);
+
 private:
   std::shared_ptr<RigidBodyTree> arm;
   std::shared_ptr<RigidBodyTree> manipuland;
@@ -81,16 +89,24 @@ private:
   Eigen::Matrix<double, Eigen::Dynamic, 1> x_arm;
   Eigen::Matrix<double, Eigen::Dynamic, 1> x_manipuland;
 
+  std::mutex x_manipuland_measured_mutex;
+  bool transcribe_published_floating_base;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> x_manipuland_measured;
+  std::vector<bool> x_manipuland_measured_known;
+
   std::mutex latest_cloud_mutex;
   KinectCalibration* kcal;
   pcl::PointCloud<pcl::PointXYZRGB> latest_cloud;
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> latest_depth_image;
   Eigen::Matrix<double, 3, Eigen::Dynamic> raycast_endpoints;
-  int num_pixel_cols = 640;
-  int num_pixel_rows = 480;
+
+  double downsample_amount = 4.0;
+  int input_num_pixel_cols = 640;
+  int input_num_pixel_rows = 480;
+  int num_pixel_cols, num_pixel_rows;
 
   double last_update_time;
-  double timestep = 0.01;
+  double timestep = 0.1;
 
   lcm::LCM lcm;
   bot_lcmgl_t* lcmgl_lidar_ = NULL;
@@ -102,10 +118,32 @@ private:
 
   std::shared_ptr<Drake::BotVisualizer<Drake::RigidBodySystem::StateVector>> visualizer;
 
+  // box and table
+  /*
   double manip_x_bounds[2] = {0.45, 0.75};
   double manip_y_bounds[2] = {-0.1, 0.2};
-  //double manip_z_bounds[2] = {0.7, 1.05};
+  double manip_z_bounds[2] = {0.7, 1.05};
+  */
+
+  // just hand
+  /*
+  double manip_x_bounds[2] = {0.45, 0.75};
+  double manip_y_bounds[2] = {-0.1, 0.2};
   double manip_z_bounds[2] = {1.15, 1.35};
+  */
+
+  // hand and box and table
+  /*
+  double manip_x_bounds[2] = {0.45, 0.75};
+  double manip_y_bounds[2] = {-0.1, 0.2};
+  double manip_z_bounds[2] = {0.7, 1.35};
+  */
+
+  // arm and box and table
+  double manip_x_bounds[2] = {0.3, 0.75};
+  double manip_y_bounds[2] = {-0.1, 0.2};
+  double manip_z_bounds[2] = {0.7, 1.5};
+
 
 };
 
