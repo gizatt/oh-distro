@@ -16,6 +16,7 @@
 #include "lcmtypes/drake/lcmt_point_cloud.hpp"
 #include "lcmtypes/kinect/frame_msg_t.hpp"
 #include "lcmtypes/drc/robot_state_t.hpp"
+#include "lcmtypes/pronto/hand_state_t.hpp"
 #include <kinect/kinect-utils.h>
 #include "pcl/point_cloud.h"
 #include "pcl/common/transforms.h"
@@ -40,10 +41,12 @@ public:
 
   IRB140Estimator(std::shared_ptr<RigidBodyTree> arm, std::shared_ptr<RigidBodyTree> manipuland, Eigen::Matrix<double, Eigen::Dynamic, 1> x0_arm, 
     Eigen::Matrix<double, Eigen::Dynamic, 1> x0_manipuland, const char* filename, const char* state_channelname,
-    bool transcribe_published_floating_base);
+    bool transcribe_published_floating_base,
+    const char* hand_state_channelname);
   void run() {
     while(1){
-      this->lcm.handleTimeout(0);
+      for (int i=0; i < 100; i++)
+        this->lcm.handleTimeout(0);
 
       double dt = getUnixTime() - last_update_time;
       if (dt > timestep){
@@ -56,7 +59,8 @@ public:
   void update(double dt);
   void performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen::MatrixXd& depth_image, pcl::PointCloud<pcl::PointXYZRGB>& full_cloud, Eigen::Matrix3Xd& points);
 
-  void setupSubscriptions(const char* state_channelname);
+  void setupSubscriptions(const char* state_channelname,
+    const char* hand_state_channelname);
   void initBotConfig(const char* filename);
   int get_trans_with_utime(std::string from_frame, std::string to_frame,
                                long long utime, Eigen::Isometry3d & mat);
@@ -81,6 +85,10 @@ public:
                            const std::string& chan,
                            const drc::robot_state_t* msg);
 
+  void handleLeftHandStateMsg(const lcm::ReceiveBuffer* rbuf,
+                           const std::string& chan,
+                           const pronto::hand_state_t* msg);
+
 private:
   std::shared_ptr<RigidBodyTree> arm;
   std::shared_ptr<RigidBodyTree> manipuland;
@@ -100,13 +108,13 @@ private:
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> latest_depth_image;
   Eigen::Matrix<double, 3, Eigen::Dynamic> raycast_endpoints;
 
-  double downsample_amount = 4.0;
+  double downsample_amount = 6.0;
   int input_num_pixel_cols = 640;
   int input_num_pixel_rows = 480;
   int num_pixel_cols, num_pixel_rows;
 
   double last_update_time;
-  double timestep = 0.1;
+  double timestep = 0.01;
 
   lcm::LCM lcm;
   bot_lcmgl_t* lcmgl_lidar_ = NULL;
@@ -140,7 +148,7 @@ private:
   */
 
   // arm and box and table
-  double manip_x_bounds[2] = {0.3, 0.75};
+  double manip_x_bounds[2] = {0.3, 1.0};
   double manip_y_bounds[2] = {-0.1, 0.2};
   double manip_z_bounds[2] = {0.7, 1.5};
 

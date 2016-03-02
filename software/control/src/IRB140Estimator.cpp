@@ -43,7 +43,8 @@ inline bool is_nan(const Eigen::MatrixBase<Derived>& x)
 
 IRB140Estimator::IRB140Estimator(std::shared_ptr<RigidBodyTree> arm, std::shared_ptr<RigidBodyTree> manipuland, 
       Eigen::Matrix<double, Eigen::Dynamic, 1> x0_arm, Eigen::Matrix<double, Eigen::Dynamic, 1> x0_manipuland,
-    const char* filename, const char* state_channelname, bool transcribe_published_floating_base) :
+    const char* filename, const char* state_channelname, bool transcribe_published_floating_base,
+    const char* hand_state_channelname) :
     x_arm(x0_arm), x_manipuland(x0_manipuland), manipuland_kinematics_cache(manipuland->bodies),
     transcribe_published_floating_base(transcribe_published_floating_base)
 {
@@ -122,9 +123,9 @@ IRB140Estimator::IRB140Estimator(std::shared_ptr<RigidBodyTree> arm, std::shared
   }
 */
 
-  latest_depth_image.resize(480, 640);
+  latest_depth_image.resize(num_pixel_rows, num_pixel_cols);
 
-  this->setupSubscriptions(state_channelname);
+  this->setupSubscriptions(state_channelname, hand_state_channelname);
 
   visualizer = make_shared<Drake::BotVisualizer<Drake::RigidBodySystem::StateVector>>(make_shared<lcm::LCM>(lcm),manipuland);
 
@@ -254,7 +255,7 @@ void IRB140Estimator::update(double dt){
   
   bot_lcmgl_begin(lcmgl_lidar_, LCMGL_POINTS);
   for (i = 0; i < points.cols(); i++){
-    if (i % 10 == 0) {
+    if (i % 1 == 0) {
       bot_lcmgl_vertex3f(lcmgl_lidar_, points(0, i), points(1, i), points(2, i));
     }
   }
@@ -281,11 +282,23 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
   Q.setZero();
   double K = 0.;
 
-  double ICP_WEIGHT = 1.0; // error is in meters
-  double FREE_SPACE_WEIGHT = 0.00;
-  double JOINT_LIMIT_WEIGHT = 0.0;
-  double JOINT_KNOWN_WEIGHT = 0.05; // error is in radians
-  double DYNAMICS_WEIGHT = 0.00001; // error is in radians
+  double icp_var = 0.05; // m
+  double joint_known_fb_var = 0.01; // m
+  double joint_known_encoder_var = 0.01; // radian
+  double joint_limit_var = 0.01; // one-sided, radians
+
+  double dynamics_floating_base_var = 0.001; // m per frame
+  double dynamics_other_var = 10.0; // rad per frame
+
+  double free_space_var = 0.5;
+
+  double ICP_WEIGHT = 1 / (2. * icp_var * icp_var);
+  double FREE_SPACE_WEIGHT = 1 / (2. * free_space_var * free_space_var);
+  double JOINT_LIMIT_WEIGHT = 1 / (2. * joint_limit_var * joint_limit_var);
+  double JOINT_KNOWN_FLOATING_BASE_WEIGHT = 1 / (2. * joint_known_fb_var * joint_known_fb_var);
+  double JOINT_KNOWN_ENCODER_WEIGHT = 1 / (2. * joint_known_encoder_var * joint_known_encoder_var);
+  double DYNAMICS_FLOATING_BASE_WEIGHT = 1 / (2. * dynamics_floating_base_var * dynamics_floating_base_var);
+  double DYNAMICS_OTHER_WEIGHT = 1 / (2. * dynamics_other_var * dynamics_other_var);
 
   /***********************************************
                 Articulated ICP 
@@ -353,17 +366,15 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
           if (POINT_TO_PLANE){
             //cout << z_norms.col(j).transpose() << endl;
             //cout << "Together: " << (z_norms.col(j) * z_norms.col(j).transpose()) << endl;
-            // normalizing by points.cols() means total contribution will be normalized, but it
-            // will be distributed more heavily towards those bodies on which more points fell...
-            f -= ICP_WEIGHT*(2. * Ks.transpose() * (z_norms.col(j) * z_norms.col(j).transpose()) * J.block(3*j, 0, 3, nq)).transpose()  / (double) points.cols();
-            Q += ICP_WEIGHT*(2. *  J.block(3*j, 0, 3, nq).transpose() * (z_norms.col(j) * z_norms.col(j).transpose()) * J.block(3*j, 0, 3, nq))  / (double) points.cols();
+            f -= ICP_WEIGHT*(2. * Ks.transpose() * (z_norms.col(j) * z_norms.col(j).transpose()) * J.block(3*j, 0, 3, nq)).transpose();
+            Q += ICP_WEIGHT*(2. *  J.block(3*j, 0, 3, nq).transpose() * (z_norms.col(j) * z_norms.col(j).transpose()) * J.block(3*j, 0, 3, nq));
           } else {
-            f -= ICP_WEIGHT*(2. * Ks.transpose() * J.block(3*j, 0, 3, nq)).transpose()  / (double) points.cols();
-            Q += ICP_WEIGHT*(2. *  J.block(3*j, 0, 3, nq).transpose() * J.block(3*j, 0, 3, nq)) / (double) points.cols();
+            f -= ICP_WEIGHT*(2. * Ks.transpose() * J.block(3*j, 0, 3, nq)).transpose();
+            Q += ICP_WEIGHT*(2. *  J.block(3*j, 0, 3, nq).transpose() * J.block(3*j, 0, 3, nq));
           }
-          K += ICP_WEIGHT*Ks.squaredNorm() / (double) points.cols();
+          K += ICP_WEIGHT*Ks.squaredNorm();
 
-          if (j % 50 == 0){
+          if (j % 1 == 0){
             // visualize point correspondences and normals
             if (z(0, j) == 0.0){
               cout << "Got zero z " << z.block<3, 1>(0, j).transpose() << " at z prime " << z_prime.block<3, 1>(0, j).transpose() << endl;
@@ -563,15 +574,14 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
 
         for (int j=0; j < z.cols(); j++){
           MatrixXd Ks(3, 1);
-          printf("TODO: check normalization\n");
           if (depth_correction[j]){
             Ks = z_corrected_depth.col(j) - z.col(j) + J.block(3*j, 0, 3, nq)*q_old;
           } else {
             Ks = z_corrected_lateral.col(j) - z.col(j)+ J.block(3*j, 0, 3, nq)*q_old;
           }
-          f -= FREE_SPACE_WEIGHT*(2. * Ks.transpose() * J.block(3*j, 0, 3, nq)).transpose()  / (double)z.cols();
-          Q += FREE_SPACE_WEIGHT*(2. *  J.block(3*j, 0, 3, nq).transpose() * J.block(3*j, 0, 3, nq)) / (double)z.cols();
-          K += FREE_SPACE_WEIGHT*Ks.squaredNorm() / z.cols();
+          f -= FREE_SPACE_WEIGHT*(2. * Ks.transpose() * J.block(3*j, 0, 3, nq)).transpose();
+          Q += FREE_SPACE_WEIGHT*(2. *  J.block(3*j, 0, 3, nq).transpose() * J.block(3*j, 0, 3, nq));
+          K += FREE_SPACE_WEIGHT*Ks.squaredNorm();
         }
         
       }
@@ -600,15 +610,20 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
   /***********************************************
                 DYNAMICS HINTS
     *********************************************/
-  if (DYNAMICS_WEIGHT > 0){
+  if (DYNAMICS_OTHER_WEIGHT > 0 || DYNAMICS_FLOATING_BASE_WEIGHT > 0){
     now = getUnixTime();
     // for now, foh on dynamics
     // min (x - x')^2
     // i.e. min x^2 - 2xx' + x'^2
-    for (int i=0; i<q_old.rows(); i++){
-      Q(i, i) += DYNAMICS_WEIGHT*1.0;
-      f(i) -= DYNAMICS_WEIGHT*q_old(i);
-      K += DYNAMICS_WEIGHT*q_old(i)*q_old(i);
+    for (int i=0; i<6; i++){
+      Q(i, i) += DYNAMICS_FLOATING_BASE_WEIGHT*1.0;
+      f(i) -= DYNAMICS_FLOATING_BASE_WEIGHT*q_old(i);
+      K += DYNAMICS_FLOATING_BASE_WEIGHT*q_old(i)*q_old(i);
+    }
+    for (int i=6; i<q_old.rows(); i++){
+      Q(i, i) += DYNAMICS_OTHER_WEIGHT*1.0;
+      f(i) -= DYNAMICS_OTHER_WEIGHT*q_old(i);
+      K += DYNAMICS_OTHER_WEIGHT*q_old(i)*q_old(i);
     }
     printf("Spent %f in joint known weight constraints.\n", getUnixTime() - now);
   }
@@ -617,7 +632,7 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
   /***********************************************
                 KNOWN POSITION HINTS
     *********************************************/
-  if (JOINT_KNOWN_WEIGHT > 0){
+  if (JOINT_KNOWN_ENCODER_WEIGHT > 0 || JOINT_KNOWN_FLOATING_BASE_WEIGHT > 0){
     now = getUnixTime();
     // min (x - x')^2
     // i.e. min x^2 - 2xx' + x'^2
@@ -625,11 +640,19 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
     VectorXd q_measured = x_manipuland_measured.block(0,0,nq,1);
     std::vector<bool> x_manipuland_measured_known_copy = x_manipuland_measured_known;
     x_manipuland_measured_mutex.unlock();
-    for (int i=0; i<q_old.rows(); i++){
+
+    for (int i=0; i<6; i++){
       if (x_manipuland_measured_known_copy[i]){
-        Q(i, i) += JOINT_KNOWN_WEIGHT*1.0;
-        f(i) -= JOINT_KNOWN_WEIGHT*q_measured(i);
-        K += JOINT_KNOWN_WEIGHT*q_measured(i)*q_measured(i);
+        Q(i, i) += JOINT_KNOWN_FLOATING_BASE_WEIGHT*1.0;
+        f(i) -= JOINT_KNOWN_FLOATING_BASE_WEIGHT*q_measured(i);
+        K += JOINT_KNOWN_FLOATING_BASE_WEIGHT*q_measured(i)*q_measured(i);
+      }
+    }
+    for (int i=6; i<q_old.rows(); i++){
+      if (x_manipuland_measured_known_copy[i]){
+        Q(i, i) += JOINT_KNOWN_ENCODER_WEIGHT*1.0;
+        f(i) -= JOINT_KNOWN_ENCODER_WEIGHT*q_measured(i);
+        K += JOINT_KNOWN_ENCODER_WEIGHT*q_measured(i)*q_measured(i);
       }
     }
     printf("Spent %f in joint known weight constraints.\n", getUnixTime() - now);
@@ -688,7 +711,8 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
 
 }
 
-void IRB140Estimator::setupSubscriptions(const char* state_channelname){
+void IRB140Estimator::setupSubscriptions(const char* state_channelname,
+  const char* hand_state_channelname){
   //lcm->subscribe("SCAN", &IRB140EstimatorSystem::handlePointlatest_cloud, this);
   //lcm.subscribe("SCAN", &IRB140Estimator::handlePlanarLidarMsg, this);
   //lcm.subscribe("PRE_SPINDLE_TO_POST_SPINDLE", &IRB140Estimator::handleSpindleFrameMsg, this);
@@ -696,6 +720,8 @@ void IRB140Estimator::setupSubscriptions(const char* state_channelname){
   kinect_frame_sub->setQueueCapacity(1);
   auto state_sub = lcm.subscribe(state_channelname, &IRB140Estimator::handleRobotStateMsg, this);
   state_sub->setQueueCapacity(1);
+ // auto hand_state_sub = lcm.subscribe(hand_state_channelname, &IRB140Estimator::handleLeftHandStateMsg, this);
+ // hand_state_sub->setQueueCapacity(1);
 
 }
 
@@ -721,6 +747,25 @@ void IRB140Estimator::handleSpindleFrameMsg(const lcm::ReceiveBuffer* rbuf,
   // todo: transform them all by the lidar frame
 }
 
+
+void IRB140Estimator::handleLeftHandStateMsg(const lcm::ReceiveBuffer* rbuf,
+                           const std::string& chan,
+                           const pronto::hand_state_t* msg){
+  printf("Received hand state on channel  %s\n", chan.c_str());
+  x_manipuland_measured_mutex.lock();
+
+  map<string, int> map = manipuland->computePositionNameToIndexMap();
+  for (int i=0; i < msg->num_joints; i++){
+    auto id = map.find(msg->joint_name[i]);
+    if (id != map.end()){
+      x_manipuland_measured(id->second) = msg->joint_position[i];
+      x_manipuland_measured_known[id->second] = true;
+    }
+  }
+
+  x_manipuland_measured_mutex.unlock();
+
+}
 
 void IRB140Estimator::handleRobotStateMsg(const lcm::ReceiveBuffer* rbuf,
                          const std::string& chan,

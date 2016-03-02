@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
   manipuland->compile();
 
   std::unique_ptr<IRB140Estimator> estimator(new IRB140Estimator(arm, manipuland, x0_arm, x0_manipuland,
-    (std::string(drc_path) + "/software/config/irb140/irb140.cfg").c_str(), "EST_ROBOT_STATE", true));
+    (std::string(drc_path) + "/software/config/irb140/irb140.cfg").c_str(), "EST_ROBOT_STATE", true, "ROBOTIQ_LEFT_STATE"));
   std::cout << "IRB140 Estimator Listening" << std::endl;
   estimator->run();
   return 0;
