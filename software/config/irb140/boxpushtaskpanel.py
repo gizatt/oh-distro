@@ -80,6 +80,22 @@ class BoxPushTaskPanel(TaskUserPanel):
         def addFolder(name, parent=None):
             self.folder = self.taskTree.addGroup(name, parent=parent)
             return self.folder
+        def addGrasping(mode, name, parent=None, confirm=False):
+            assert mode in ('open', 'close')
+            group = self.taskTree.addGroup(name, parent=parent)
+            side = self.params.getPropertyEnumValue('Hand')
+
+            checkStatus = False  # whether to confirm that there is an object in the hand when closed
+            if 'userConfig' in drcargs.getDirectorConfig() and 'useKuka' in drcargs.getDirectorConfig()['userConfig']:
+                checkStatus = True
+
+            if mode == 'open':
+                addTask(rt.OpenHand(name='open grasp hand', side=side, CheckStatus=checkStatus), parent=group)
+            else:
+                addTask(rt.CloseHand(name='close grasp hand', side=side, CheckStatus=checkStatus), parent=group)
+            if confirm:
+                addTask(rt.UserPromptTask(name='Confirm grasping has succeeded', message='Continue when grasp finishes.'),
+                        parent=group)
 
         self.taskTree.removeAllTasks()
         ###############
@@ -88,10 +104,12 @@ class BoxPushTaskPanel(TaskUserPanel):
         # add the tasks
 
         addFolder('Tasks')
-        addTask(rt.PrintTask(name='display message', message='hello world'))
+        addTask(rt.PrintTask(name='display message', message='hello world!@'))
         addTask(rt.DelayTask(name='wait', delayTime=1.0))
         addTask(rt.UserPromptTask(name='prompt for user input', message='please press continue...'))
         addFunc(self.planner.test, name='test planner')
+        addGrasping('open', name='open hand', confirm=False)
+
 
 
 
