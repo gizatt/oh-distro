@@ -89,7 +89,7 @@ target_link_libraries(drc-atlas-fall-detector AtlasFallDetector)
 pods_install_executables(drc-atlas-fall-detector )
 
 add_library(IRB140Estimator SHARED IRB140Estimator.cpp)
-pods_use_pkg_config_packages(IRB140Estimator lcmtypes_drc_lcmtypes lcm drake-convex-hull kinect-utils lcmtypes_kinect bot2-lcmgl-client bot2-core bot2-frames bot2-param-client opencv)
+pods_use_pkg_config_packages(IRB140Estimator lcmtypes_drc_lcmtypes lcm drake-convex-hull kinect-utils lcmtypes_kinect bot2-lcmgl-client bot2-core bot2-frames bot2-param-client opencv pcl_common-1.7 pcl_apps-1.7 pcl_features-1.7 pcl_filters-1.7)
 target_link_libraries(IRB140Estimator drakeRBM lcmtypes_kinect)
 pods_install_libraries(IRB140Estimator)
 pods_install_headers(IRB140Estimator.hpp DESTINATION control)

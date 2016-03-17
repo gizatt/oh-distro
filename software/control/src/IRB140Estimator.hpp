@@ -15,8 +15,7 @@
 #include "bot_core/rigid_transform_t.hpp"
 #include "lcmtypes/drake/lcmt_point_cloud.hpp"
 #include "lcmtypes/kinect/frame_msg_t.hpp"
-#include "lcmtypes/drc/robot_state_t.hpp"
-#include "lcmtypes/pronto/hand_state_t.hpp"
+#include "lcmtypes/bot_core/robot_state_t.hpp"
 #include <kinect/kinect-utils.h>
 #include "pcl/point_cloud.h"
 #include "pcl/common/transforms.h"
@@ -83,11 +82,11 @@ public:
 
   void handleRobotStateMsg(const lcm::ReceiveBuffer* rbuf,
                            const std::string& chan,
-                           const drc::robot_state_t* msg);
+                           const bot_core::robot_state_t* msg);
 
   void handleLeftHandStateMsg(const lcm::ReceiveBuffer* rbuf,
                            const std::string& chan,
-                           const pronto::hand_state_t* msg);
+                           const bot_core::robot_state_t* msg);
 
 private:
   std::shared_ptr<RigidBodyTree> arm;

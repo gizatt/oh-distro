@@ -312,7 +312,7 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
     // project all cloud points onto the surface of the object positions
     // via the last state estimate
     double now1 = getUnixTime();
-    manipuland->signedDistances(manipuland_kinematics_cache, points,
+    manipuland->collisionDetectFromPoints(manipuland_kinematics_cache, points,
                          phi, normal, x, body_x, body_idx, false);
     printf("SDF took %f\n", getUnixTime()-now1);
 
@@ -750,7 +750,7 @@ void IRB140Estimator::handleSpindleFrameMsg(const lcm::ReceiveBuffer* rbuf,
 
 void IRB140Estimator::handleLeftHandStateMsg(const lcm::ReceiveBuffer* rbuf,
                            const std::string& chan,
-                           const pronto::hand_state_t* msg){
+                           const bot_core::robot_state_t* msg){
   printf("Received hand state on channel  %s\n", chan.c_str());
   x_manipuland_measured_mutex.lock();
 
@@ -769,7 +769,7 @@ void IRB140Estimator::handleLeftHandStateMsg(const lcm::ReceiveBuffer* rbuf,
 
 void IRB140Estimator::handleRobotStateMsg(const lcm::ReceiveBuffer* rbuf,
                          const std::string& chan,
-                         const drc::robot_state_t* msg){
+                         const bot_core::robot_state_t* msg){
   printf("Received robot state on channel  %s\n", chan.c_str());
   x_manipuland_measured_mutex.lock();
 
