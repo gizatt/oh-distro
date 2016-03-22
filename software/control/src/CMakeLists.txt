@@ -98,11 +98,6 @@ add_executable(irb140_runEstimator irb140_runEstimator.cpp)
 target_link_libraries(irb140_runEstimator IRB140Estimator)
 pods_install_executables(irb140_runEstimator)
 
-add_executable(demonstrate_eigen_bug demonstrate_eigen_bug.cpp)
-target_link_libraries(demonstrate_eigen_bug)
-pods_use_pkg_config_packages(demonstrate_eigen_bug eigen3)
-pods_install_executables(demonstrate_eigen_bug)
-
 add_executable(test_2D_sdf test_2D_sdf.cpp)
 target_link_libraries(test_2D_sdf)
 pods_use_pkg_config_packages(test_2D_sdf eigen3)
