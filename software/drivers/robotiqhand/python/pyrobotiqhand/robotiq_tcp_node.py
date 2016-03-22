@@ -12,6 +12,7 @@ import drc
 from time import sleep, time
 from datetime import datetime
 from drc.joint_state_t import joint_state_t
+import bot_core
 
 import pyrobotiqhand.baseSModel as baseSModel
 import pyrobotiqhand.comModbusTcp as comModbusTcp
@@ -26,7 +27,7 @@ def publishSystemStatus(side, lcm, status):
     if connectPublished and activePublished:
         return
 
-    msg = drc.system_status_t()
+    msg = bot_core.system_status_t()
     msg.utime = (time() * 1000000)
     msg.system = 4  #provided as the system level for grippers
     msg.importance = 0
