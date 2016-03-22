@@ -43,6 +43,7 @@ int main(int argc, char** argv) {
   // arm and box and table
   std::shared_ptr<RigidBodyTree> manipuland(new RigidBodyTree(std::string(drc_path) + "/software/control/src/urdf/irb140_chull_robotiq.urdf"));
   manipuland->addRobotFromURDF(std::string(drc_path) + "/software/control/src/jasmine_tea_box.urdf", DrakeJoint::ROLLPITCHYAW);
+  manipuland->addRobotFromURDF(std::string(drc_path) + "/software/control/src/desk.urdf", DrakeJoint::ROLLPITCHYAW);
   VectorXd x0_manipuland = VectorXd::Zero(manipuland->num_positions + manipuland->num_velocities);
   x0_manipuland.block<6, 1>(0, 0) << -.17, 0.0, .91, 0.0, 0.0, 0.0;
   x0_manipuland.block<6, 1>(manipuland->num_positions-12, 0) << 0.67, 0.0, 0.8, 0.0, 0.0, 0.0;

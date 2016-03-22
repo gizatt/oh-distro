@@ -262,6 +262,28 @@ void IRB140Estimator::update(double dt){
   bot_lcmgl_end(lcmgl_lidar_);
   bot_lcmgl_switch_buffer(lcmgl_lidar_);  
 
+  // Publish the object state)
+  for (int roboti=1; roboti < manipuland->robot_name.size(); roboti++){
+    bot_core::robot_state_t manipulation_state;
+    manipulation_state.utime = getUnixTime();
+    std::string robot_name = manipuland->robot_name[roboti];
+
+    manipulation_state.num_joints = 0;
+    for (int i=0; i<manipuland->bodies.size(); i++){
+      if (manipuland->bodies[i]->model_name == robot_name){
+        // warning: if numpositions != numvelocities, problems arise...
+        manipulation_state.num_joints += manipuland->bodies[i]->getJoint().getNumPositions();
+        for (int j=0; j < manipuland->bodies[i]->getJoint().getNumPositions(); j++){
+          manipulation_state.joint_name.push_back(manipuland->bodies[i]->getJoint().getPositionName(j));
+          manipulation_state.joint_position.push_back(x_manipuland[manipuland->bodies[i]->position_num_start + j]);
+          manipulation_state.joint_velocity.push_back(x_manipuland[manipuland->bodies[i]->position_num_start + j + manipuland->num_positions]);
+        }
+      }
+    }
+    manipulation_state.joint_effort.resize(manipulation_state.num_joints, 0.0);
+    std::string channelname = "EST_MANIPULAND_STATE_" + robot_name;
+    lcm.publish(channelname, &manipulation_state);
+  }
 }  
 
 void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen::MatrixXd& depth_image, pcl::PointCloud<pcl::PointXYZRGB>& full_cloud, Eigen::Matrix3Xd& points){
