@@ -754,13 +754,6 @@ void IRB140Estimator::handlePlanarLidarMsg(const lcm::ReceiveBuffer* rbuf,
   // transform according 
 }
 
-void IRB140Estimator::handlePointCloudMsg(const lcm::ReceiveBuffer* rbuf,
-                           const std::string& chan,
-                           const drake::lcmt_point_cloud* msg){
-  printf("Received scan pts on channel %s\n", chan.c_str());
-  // todo: transform them all by the lidar frame
-}
-
 void IRB140Estimator::handleSpindleFrameMsg(const lcm::ReceiveBuffer* rbuf,
                            const std::string& chan,
                            const bot_core::rigid_transform_t* msg){

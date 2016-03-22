@@ -13,7 +13,6 @@
 #include "lcmtypes/drake/lcmt_robot_state.hpp"
 #include "bot_core/planar_lidar_t.hpp"
 #include "bot_core/rigid_transform_t.hpp"
-#include "lcmtypes/drake/lcmt_point_cloud.hpp"
 #include "lcmtypes/kinect/frame_msg_t.hpp"
 #include "lcmtypes/bot_core/robot_state_t.hpp"
 #include <kinect/kinect-utils.h>
@@ -67,10 +66,6 @@ public:
   void handlePlanarLidarMsg(const lcm::ReceiveBuffer* rbuf,
                            const std::string& chan,
                            const bot_core::planar_lidar_t* msg);
-
-  void handlePointCloudMsg(const lcm::ReceiveBuffer* rbuf,
-                           const std::string& chan,
-                           const drake::lcmt_point_cloud* msg);
 
   void handleSpindleFrameMsg(const lcm::ReceiveBuffer* rbuf,
                            const std::string& chan,
