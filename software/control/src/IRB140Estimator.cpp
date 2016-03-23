@@ -193,6 +193,9 @@ void IRB140Estimator::update(double dt){
   Eigen::Isometry3d kinect2world =  world2tag.inverse() * kinect2tag;
   pcl::transformPointCloud(full_cloud, full_cloud, kinect2world.matrix());
 
+  cout << kinect2tag.matrix() << endl;
+  cout << world2tag.matrix() << endl;
+
   // cut down to just point cloud in our manipulation space
   //(todo: bring in this info externally somehow)
   Matrix3Xd points(3, full_cloud.size());
@@ -304,7 +307,7 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
   Q.setZero();
   double K = 0.;
 
-  double icp_var = 0.05; // m
+  double icp_var = 0.025; // m
   double joint_known_fb_var = 0.01; // m
   double joint_known_encoder_var = 0.01; // radian
   double joint_limit_var = 0.01; // one-sided, radians
