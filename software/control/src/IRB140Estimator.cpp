@@ -265,21 +265,38 @@ void IRB140Estimator::update(double dt){
   bot_lcmgl_end(lcmgl_lidar_);
   bot_lcmgl_switch_buffer(lcmgl_lidar_);  
 
-  // Publish the object state)
+  // Publish the object state
   for (int roboti=1; roboti < manipuland->robot_name.size(); roboti++){
     bot_core::robot_state_t manipulation_state;
     manipulation_state.utime = getUnixTime();
     std::string robot_name = manipuland->robot_name[roboti];
 
     manipulation_state.num_joints = 0;
+    bool found_floating = false;
     for (int i=0; i<manipuland->bodies.size(); i++){
       if (manipuland->bodies[i]->model_name == robot_name){
-        // warning: if numpositions != numvelocities, problems arise...
-        manipulation_state.num_joints += manipuland->bodies[i]->getJoint().getNumPositions();
-        for (int j=0; j < manipuland->bodies[i]->getJoint().getNumPositions(); j++){
-          manipulation_state.joint_name.push_back(manipuland->bodies[i]->getJoint().getPositionName(j));
-          manipulation_state.joint_position.push_back(x_manipuland[manipuland->bodies[i]->position_num_start + j]);
-          manipulation_state.joint_velocity.push_back(x_manipuland[manipuland->bodies[i]->position_num_start + j + manipuland->num_positions]);
+        if (manipuland->bodies[i]->getJoint().isFloating()){
+          manipulation_state.pose.translation.x = x_manipuland[manipuland->bodies[i]->position_num_start + 0];
+          manipulation_state.pose.translation.y = x_manipuland[manipuland->bodies[i]->position_num_start + 1];
+          manipulation_state.pose.translation.z = x_manipuland[manipuland->bodies[i]->position_num_start + 2];
+          auto quat = rpy2quat(x_manipuland.block<3, 1>(manipuland->bodies[i]->position_num_start + 3, 0));
+          manipulation_state.pose.rotation.w = quat[0];
+          manipulation_state.pose.rotation.x = quat[1];
+          manipulation_state.pose.rotation.y = quat[2];
+          manipulation_state.pose.rotation.z = quat[3];
+          if (found_floating){
+            printf("Had more than one floating joint???\n");
+            exit(-1);
+          }
+          found_floating = true;
+        } else {
+          // warning: if numpositions != numvelocities, problems arise...
+          manipulation_state.num_joints += manipuland->bodies[i]->getJoint().getNumPositions();
+          for (int j=0; j < manipuland->bodies[i]->getJoint().getNumPositions(); j++){
+            manipulation_state.joint_name.push_back(manipuland->bodies[i]->getJoint().getPositionName(j));
+            manipulation_state.joint_position.push_back(x_manipuland[manipuland->bodies[i]->position_num_start + j]);
+            manipulation_state.joint_velocity.push_back(x_manipuland[manipuland->bodies[i]->position_num_start + j + manipuland->num_positions]);
+          }
         }
       }
     }

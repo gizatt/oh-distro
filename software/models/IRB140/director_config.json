@@ -8,6 +8,60 @@
     "teleop":     "../../drake/drake/examples/IRB140/urdf/irb_140_robotiq_ati.urdf"
   },
 
+  "fittingConfig": {
+    "arm": {
+      "urdf": "../../control/src/urdf/irb140_chull_robotiq.urdf",
+      "update_channel": "EST_MANIPULAND_STATE_IRB140_-_M2004C_Complete_base.SLDASM",
+      "drakeJointNames": [
+        "base_x",
+        "base_y",
+        "base_z",
+        "base_roll",
+        "base_pitch",
+        "base_yaw",
+        "joint1",
+        "joint2",
+        "joint3",
+        "joint4",
+        "joint5",
+        "joint6",
+        "left_finger_1_joint_0",
+        "left_finger_1_joint_1",
+        "left_finger_1_joint_2",
+        "left_finger_2_joint_0",
+        "left_finger_2_joint_1",
+        "left_finger_2_joint_2",
+        "left_finger_middle_joint_0",
+        "left_finger_middle_joint_1",
+        "left_finger_middle_joint_2"
+      ]
+    },
+    "desk": {
+      "urdf": "../../control/src/desk.urdf",
+      "update_channel": "EST_MANIPULAND_STATE_desk",
+      "drakeJointNames": [
+        "base_x",
+        "base_y",
+        "base_z",
+        "base_roll",
+        "base_pitch",
+        "base_yaw"
+      ]
+    },
+    "jasmine_tea_box": {
+      "urdf": "../../control/src/jasmine_tea_box.urdf",
+      "update_channel": "EST_MANIPULAND_STATE_jasmine_tea_box",
+      "drakeJointNames": [
+        "base_x",
+        "base_y",
+        "base_z",
+        "base_roll",
+        "base_pitch",
+        "base_yaw"
+      ]
+    }
+  },
+
   "teleopJointGroups" : [
 
       { "name" : "Left Arm",
