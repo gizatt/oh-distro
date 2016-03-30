@@ -143,7 +143,7 @@ private:
 
   // arm and box and table
   double manip_x_bounds[2] = {0.3, 1.0};
-  double manip_y_bounds[2] = {-0.1, 0.2};
+  double manip_y_bounds[2] = {-0.4, 0.4};
   double manip_z_bounds[2] = {0.7, 1.5};
 
 

@@ -324,15 +324,15 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
   Q.setZero();
   double K = 0.;
 
-  double icp_var = 0.025; // m
-  double joint_known_fb_var = 0.01; // m
-  double joint_known_encoder_var = 0.01; // radian
-  double joint_limit_var = 0.01; // one-sided, radians
+  double icp_var = 0.1; // m
+  double joint_known_fb_var = 0.001; // m
+  double joint_known_encoder_var = 0.001; // radian
+  double joint_limit_var = 0.001; // one-sided, radians
 
-  double dynamics_floating_base_var = 0.001; // m per frame
-  double dynamics_other_var = 10.0; // rad per frame
+  double dynamics_floating_base_var = 0.0001; // m per frame
+  double dynamics_other_var = 0.5; // rad per frame
 
-  double free_space_var = 0.5;
+  double free_space_var = 1000.0;
 
   double ICP_WEIGHT = 1 / (2. * icp_var * icp_var);
   double FREE_SPACE_WEIGHT = 1 / (2. * free_space_var * free_space_var);
