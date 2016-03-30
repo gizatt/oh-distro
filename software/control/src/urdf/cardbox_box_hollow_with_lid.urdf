@@ -123,18 +123,18 @@
       <geometry>
         <box size="0.1725 0.27 0.005"/>
       </geometry>
-      <origin xyz="0.1 0 0"/>
+      <origin xyz="0.08625 0 0"/>
     </visual>
     <collision>
       <geometry>
         <box size="0.1725 0.27 0.005"/>
       </geometry>
-      <origin xyz="0.1 0 0"/>
+      <origin xyz="0.08625 0 0"/>
     </collision>
     <inertial>
       <mass value="0.1"/>
       <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
-      <origin xyz="0.1 0 0"/>
+      <origin xyz="0.08625 0 0"/>
     </inertial>
   </link>
   <joint name="box_wall_px_to_box_lid_px" type="revolute">
@@ -151,18 +151,18 @@
       <geometry>
         <box size="0.1725 0.27 0.005"/>
       </geometry>
-      <origin xyz="-0.1 0 0"/>
+      <origin xyz="-0.08625 0 0"/>
     </visual>
     <collision>
       <geometry>
         <box size="0.1725 0.27 0.005"/>
       </geometry>
-      <origin xyz="-0.1 0 0"/>
+      <origin xyz="-0.08625 0 0"/>
     </collision>
     <inertial>
       <mass value="0.1"/>
       <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
-      <origin xyz="-0.1 0 0"/>
+      <origin xyz="-0.08625 0 0"/>
     </inertial>
   </link>
   <joint name="box_wall_nx_to_box_lid_nx" type="revolute">
@@ -179,18 +179,18 @@
       <geometry>
         <box size="0.345 0.135 0.005"/>
       </geometry>
-      <origin xyz="0 0.075 0"/>
+      <origin xyz="0 0.0675 0"/>
     </visual>
     <collision>
       <geometry>
         <box size="0.345 0.135 0.005"/>
       </geometry>
-      <origin xyz="0 0.075 0"/>
+      <origin xyz="0 0.0675 0"/>
     </collision>
     <inertial>
       <mass value="0.1"/>
       <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
-      <origin xyz="0 0.075 0"/>
+      <origin xyz="0 0.0675 0"/>
     </inertial>
   </link>
   <joint name="box_wall_py_to_box_lid_py" type="revolute">
@@ -207,18 +207,18 @@
       <geometry>
         <box size="0.345 0.135 0.005"/>
       </geometry>
-      <origin xyz="0 -0.075 0"/>
+      <origin xyz="0 -0.0675 0"/>
     </visual>
     <collision>
       <geometry>
         <box size="0.345 0.135 0.005"/>
       </geometry>
-      <origin xyz="0 -0.075 0"/>
+      <origin xyz="0 -0.0675 0"/>
     </collision>
     <inertial>
       <mass value="0.1"/>
       <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
-      <origin xyz="0 -0.075 0"/>
+      <origin xyz="0 -0.0675 0"/>
     </inertial>
   </link>
   <joint name="box_wall_ny_to_box_lid_ny" type="revolute">
