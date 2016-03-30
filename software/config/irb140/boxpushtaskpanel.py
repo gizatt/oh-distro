@@ -41,6 +41,9 @@ class BoxPushTaskPlanner(object):
         self.plans = []
         self.sensorJointController = robotSystem.robotStateJointController
 
+        # For positions arm relattive to box
+        self.reachDist = 0.09
+        self.view = robotSystem.view
 
 
     def test(self):
@@ -151,19 +154,19 @@ class BoxPushTaskPlanner(object):
         startPose = self.getPlanningStartPose()
 
         #if self.ikPlanner.fixedBaseArm: # includes reachDist hack instead of in ikPlanner (TODO!)
-        f = transformUtils.frameFromPositionAndRPY( np.array(frame.transform.GetPosition())-np.array([self.reachDist+.15,0,-.03]), [0,0,-90] )
+        f = transformUtils.frameFromPositionAndRPY( np.array(frame.transform.GetPosition())-np.array([0.0,self.reachDist+.15,-.03]), [0,0,-90] )
         f.PreMultiply()
         f.RotateY(90)
         f.Update()
         self.constraintSet = self.ikPlanner.planEndEffectorGoal(startPose, side, f, lockBase=False, lockBack=True)
         #newFrame = vis.FrameItem('reach_item', f, self.view)
         #self.constraintSet = self.ikPlanner.planGraspOrbitReachPlan(startPose, side, newFrame, constraints=None, dist=self.reachDist, lockBase=self.lockBase, lockBack=self.lockBack, lockArm=False)
-
-        armPostureConstraint = self.ikPlanner.createPostureConstraint(armPoseName, loweringSideJoints)
-        armPostureConstraint.tspan = np.array([1.0, 1.0])
-        self.constraintSet.constraints.append(armPostureConstraint)
-        
+       
         self.constraintSet.runIk()
+
+        print 'planning touch'
+        plan = self.constraintSet.runIkTraj()
+        self.addPlan(plan)
 
     def planTouchTableObject(self, side='left'):
 
@@ -175,7 +178,7 @@ class BoxPushTaskPlanner(object):
         startPose = self.getPlanningStartPose()
 
         #if self.ikPlanner.fixedBaseArm: # includes distance hack and currently uses reachDist instead of touchDist (TODO!)
-        f = transformUtils.frameFromPositionAndRPY( np.array(frame.transform.GetPosition())-np.array([self.reachDist+.05,0,-0.03]), [0,0,-90] )
+        f = transformUtils.frameFromPositionAndRPY( np.array(frame.transform.GetPosition())-np.array([0.0,self.reachDist-.15,-.03]), [0,0,-90] )
         f.PreMultiply()
         f.RotateY(90)
         f.Update()
