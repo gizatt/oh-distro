@@ -342,6 +342,8 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
   double DYNAMICS_FLOATING_BASE_WEIGHT = 1 / (2. * dynamics_floating_base_var * dynamics_floating_base_var);
   double DYNAMICS_OTHER_WEIGHT = 1 / (2. * dynamics_other_var * dynamics_other_var);
 
+  double MAX_CONSIDERED_ICP_DISTANCE = 0.01;
+
   /***********************************************
                 Articulated ICP 
     *********************************************/
@@ -404,40 +406,42 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
         bool POINT_TO_PLANE = false;
 
         for (int j=0; j < num_points_on_body[i]; j++){
-          MatrixXd Ks = z.col(j) - z_prime.col(j) + J.block(3*j, 0, 3, nq)*q_old;
-          if (POINT_TO_PLANE){
-            //cout << z_norms.col(j).transpose() << endl;
-            //cout << "Together: " << (z_norms.col(j) * z_norms.col(j).transpose()) << endl;
-            f -= ICP_WEIGHT*(2. * Ks.transpose() * (z_norms.col(j) * z_norms.col(j).transpose()) * J.block(3*j, 0, 3, nq)).transpose();
-            Q += ICP_WEIGHT*(2. *  J.block(3*j, 0, 3, nq).transpose() * (z_norms.col(j) * z_norms.col(j).transpose()) * J.block(3*j, 0, 3, nq));
-          } else {
-            f -= ICP_WEIGHT*(2. * Ks.transpose() * J.block(3*j, 0, 3, nq)).transpose();
-            Q += ICP_WEIGHT*(2. *  J.block(3*j, 0, 3, nq).transpose() * J.block(3*j, 0, 3, nq));
-          }
-          K += ICP_WEIGHT*Ks.squaredNorm();
-
-          if (j % 1 == 0){
-            // visualize point correspondences and normals
-            if (z(0, j) == 0.0){
-              cout << "Got zero z " << z.block<3, 1>(0, j).transpose() << " at z prime " << z_prime.block<3, 1>(0, j).transpose() << endl;
+          if ((z.col(j) - z_prime.col(j)).norm() <= MAX_CONSIDERED_ICP_DISTANCE){ 
+            MatrixXd Ks = z.col(j) - z_prime.col(j) + J.block(3*j, 0, 3, nq)*q_old;
+            if (POINT_TO_PLANE){
+              //cout << z_norms.col(j).transpose() << endl;
+              //cout << "Together: " << (z_norms.col(j) * z_norms.col(j).transpose()) << endl;
+              f -= ICP_WEIGHT*(2. * Ks.transpose() * (z_norms.col(j) * z_norms.col(j).transpose()) * J.block(3*j, 0, 3, nq)).transpose();
+              Q += ICP_WEIGHT*(2. *  J.block(3*j, 0, 3, nq).transpose() * (z_norms.col(j) * z_norms.col(j).transpose()) * J.block(3*j, 0, 3, nq));
+            } else {
+              f -= ICP_WEIGHT*(2. * Ks.transpose() * J.block(3*j, 0, 3, nq)).transpose();
+              Q += ICP_WEIGHT*(2. *  J.block(3*j, 0, 3, nq).transpose() * J.block(3*j, 0, 3, nq));
             }
-            double dist_normalized = fmin(1.0, (z.col(j) - z_prime.col(j)).norm());
-            bot_lcmgl_color3f(lcmgl_icp_, dist_normalized*dist_normalized, 0, (1.0-dist_normalized)*(1.0-dist_normalized));
-            
-            bot_lcmgl_begin(lcmgl_icp_, LCMGL_LINES);
-            bot_lcmgl_line_width(lcmgl_icp_, 2.0f);
-            bot_lcmgl_vertex3f(lcmgl_icp_, z(0, j), z(1, j), z(2, j));
-            bot_lcmgl_vertex3f(lcmgl_icp_, z_prime(0, j), z_prime(1, j), z_prime(2, j));
-            bot_lcmgl_end(lcmgl_icp_);  
+            K += ICP_WEIGHT*Ks.squaredNorm();
 
-  /*
-            bot_lcmgl_line_width(lcmgl_icp_, 1.0f);
-            bot_lcmgl_color3f(lcmgl_icp_, 1.0, 0.0, 1.0);
-            bot_lcmgl_begin(lcmgl_icp_, LCMGL_LINES);
-            bot_lcmgl_vertex3f(lcmgl_icp_, z_prime(0, j)+z_norms(0, j)*0.01, z_prime(1, j)+z_norms(1, j)*0.01, z_prime(2, j)+z_norms(2, j)*0.01);
-            bot_lcmgl_vertex3f(lcmgl_icp_, z_prime(0, j), z_prime(1, j), z_prime(2, j));
-            bot_lcmgl_end(lcmgl_icp_);  
-  */
+            if (j % 1 == 0){
+              // visualize point correspondences and normals
+              if (z(0, j) == 0.0){
+                cout << "Got zero z " << z.block<3, 1>(0, j).transpose() << " at z prime " << z_prime.block<3, 1>(0, j).transpose() << endl;
+              }
+              double dist_normalized = fmin(1.0, (z.col(j) - z_prime.col(j)).norm());
+              bot_lcmgl_color3f(lcmgl_icp_, dist_normalized*dist_normalized, 0, (1.0-dist_normalized)*(1.0-dist_normalized));
+              
+              bot_lcmgl_begin(lcmgl_icp_, LCMGL_LINES);
+              bot_lcmgl_line_width(lcmgl_icp_, 2.0f);
+              bot_lcmgl_vertex3f(lcmgl_icp_, z(0, j), z(1, j), z(2, j));
+              bot_lcmgl_vertex3f(lcmgl_icp_, z_prime(0, j), z_prime(1, j), z_prime(2, j));
+              bot_lcmgl_end(lcmgl_icp_);  
+
+    /*
+              bot_lcmgl_line_width(lcmgl_icp_, 1.0f);
+              bot_lcmgl_color3f(lcmgl_icp_, 1.0, 0.0, 1.0);
+              bot_lcmgl_begin(lcmgl_icp_, LCMGL_LINES);
+              bot_lcmgl_vertex3f(lcmgl_icp_, z_prime(0, j)+z_norms(0, j)*0.01, z_prime(1, j)+z_norms(1, j)*0.01, z_prime(2, j)+z_norms(2, j)*0.01);
+              bot_lcmgl_vertex3f(lcmgl_icp_, z_prime(0, j), z_prime(1, j), z_prime(2, j));
+              bot_lcmgl_end(lcmgl_icp_);  
+    */
+            }
           }
         }
       }
