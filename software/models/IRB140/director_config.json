@@ -59,6 +59,22 @@
         "base_pitch",
         "base_yaw"
       ]
+    },
+    "cardboard_box": {
+      "urdf": "../../control/src/urdf/cardbox_box_hollow_with_lid.urdf",
+      "update_channel": "EST_MANIPULAND_STATE_cardboard_box",
+      "drakeJointNames": [
+        "base_x",
+        "base_y",
+        "base_z",
+        "base_roll",
+        "base_pitch",
+        "base_yaw",
+        "box_wall_px_to_box_lid_px",
+        "box_wall_nx_to_box_lid_nx",
+        "box_wall_py_to_box_lid_py",
+        "box_wall_ny_to_box_lid_ny"
+      ]
     }
   },
 
