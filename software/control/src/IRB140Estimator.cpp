@@ -127,7 +127,7 @@ IRB140Estimator::IRB140Estimator(std::shared_ptr<RigidBodyTree> arm, std::shared
 
   this->setupSubscriptions(state_channelname, hand_state_channelname);
 
-  visualizer = make_shared<Drake::BotVisualizer<Drake::RigidBodySystem::StateVector>>(make_shared<lcm::LCM>(lcm),manipuland);
+  //visualizer = make_shared<Drake::BotVisualizer<Drake::RigidBodySystem::StateVector>>(make_shared<lcm::LCM>(lcm),manipuland);
 
   namedWindow( "IRB140EstimatorDebug", WINDOW_AUTOSIZE );
   startWindowThread();
