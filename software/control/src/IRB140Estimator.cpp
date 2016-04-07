@@ -267,6 +267,7 @@ void IRB140Estimator::update(double dt){
   bot_lcmgl_switch_buffer(lcmgl_lidar_);  
 
   // Publish the object state
+  cout << "Manipuland robot name vector: " << manipuland->robot_name.size() << endl;
   for (int roboti=1; roboti < manipuland->robot_name.size(); roboti++){
     bot_core::robot_state_t manipulation_state;
     manipulation_state.utime = getUnixTime();
@@ -303,6 +304,7 @@ void IRB140Estimator::update(double dt){
     }
     manipulation_state.joint_effort.resize(manipulation_state.num_joints, 0.0);
     std::string channelname = "EST_MANIPULAND_STATE_" + robot_name;
+    cout << " published to " << channelname << endl;
     lcm.publish(channelname, &manipulation_state);
   }
 }  
@@ -325,13 +327,13 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
   Q.setZero();
   double K = 0.;
 
-  double icp_var = 0.05; // m
-  double joint_known_fb_var = 0.001; // m
+  double icp_var = 0.01; // m
+  double joint_known_fb_var = 0.1; // m
   double joint_known_encoder_var = 0.001; // radian
   double joint_limit_var = 0.01; // one-sided, radians
 
   double dynamics_floating_base_var = 0.0001; // m per frame
-  double dynamics_other_var = 0.5; // rad per frame
+  double dynamics_other_var = 0.1; // rad per frame
 
   double free_space_var = 0.1;
 

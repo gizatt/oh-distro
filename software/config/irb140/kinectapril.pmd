@@ -1,6 +1,6 @@
 group "00.params" {
     cmd "pserver" {
-        exec = "bot-param-server $DRC_BASE/software/config/atlas/robot.cfg";
+        exec = "bot-param-server $DRC_BASE/software/config/irb140/irb140.cfg";
         host = "localhost";
     }
 }

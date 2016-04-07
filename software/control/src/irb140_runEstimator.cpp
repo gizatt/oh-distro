@@ -42,8 +42,8 @@ int main(int argc, char** argv) {
   */
 
   // arm and box and table
-  /*
-  std::shared_ptr<RigidBodyTree> manipuland(new RigidBodyTree(std::string(drc_path) + "/software/control/src/urdf/irb140_chull_robotiq.urdf"));
+/*  
+  std::shared_ptr<RigidBodyTree> manipuland(new RigidBodyTree(std::string(drc_path) + "/software/control/src/urdf/irb140_chull_robotiq_actuated_fingers.urdf"));
   manipuland->addRobotFromURDF(std::string(drc_path) + "/software/control/src/jasmine_tea_box.urdf", DrakeJoint::ROLLPITCHYAW);
   manipuland->addRobotFromURDF(std::string(drc_path) + "/software/control/src/desk.urdf", DrakeJoint::ROLLPITCHYAW);
   VectorXd x0_manipuland = VectorXd::Zero(manipuland->num_positions + manipuland->num_velocities);
@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
   */
 
   // arm and table and cardboard box with lid
-  std::shared_ptr<RigidBodyTree> manipuland(new RigidBodyTree(std::string(drc_path) + "/software/control/src/urdf/irb140_chull_robotiq.urdf"));
+  std::shared_ptr<RigidBodyTree> manipuland(new RigidBodyTree(std::string(drc_path) + "/software/control/src/urdf/irb140_chull_robotiq_actuated_fingers.urdf"));
   manipuland->addRobotFromURDF(std::string(drc_path) + "/software/control/src/desk.urdf", DrakeJoint::ROLLPITCHYAW);
   manipuland->addRobotFromURDF(std::string(drc_path) + "/software/control/src/urdf/cardbox_box_hollow_with_lid.urdf", DrakeJoint::ROLLPITCHYAW);
   VectorXd x0_manipuland = VectorXd::Zero(manipuland->num_positions + manipuland->num_velocities);
