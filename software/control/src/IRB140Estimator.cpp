@@ -6,12 +6,15 @@
 #include "sdf_2d_functions.hpp"
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #include <cmath>
 #include "drake/systems/plants/joints/RevoluteJoint.h"
 
 using namespace std;
 using namespace Eigen;
 using namespace cv;
+
+#define MAX_SCAN_DIST 10.0
 
 template<typename _Tp, int _rows, int _cols, int _options, int _maxRows, int _maxCols>
 void eigen2cv( const Eigen::Matrix<_Tp, _rows, _cols, _options, _maxRows, _maxCols>& src, Mat& dst)
@@ -100,7 +103,6 @@ IRB140Estimator::IRB140Estimator(std::shared_ptr<RigidBodyTree> arm, std::shared
   num_pixel_cols = (int) ceil( ((double)input_num_pixel_cols) / downsample_amount);
   num_pixel_rows = (int) ceil( ((double)input_num_pixel_rows) / downsample_amount);
 
-  double max_range = 30.0;
   raycast_endpoints.resize(3,num_pixel_rows*num_pixel_cols);
   double constant = 1.0f / kcal->intrinsics_rgb.fx ;
   for (size_t v=0; v<num_pixel_rows; v++) {
@@ -108,8 +110,8 @@ IRB140Estimator::IRB140Estimator(std::shared_ptr<RigidBodyTree> arm, std::shared
       raycast_endpoints.col(num_pixel_cols*v + u) = Vector3d(
         (((double) u)*downsample_amount- kcal->intrinsics_depth.cx)*1.0*constant,
         (((double) v)*downsample_amount- kcal->intrinsics_depth.cy)*1.0*constant, 
-        1.0); // rolled out from rotx(pitch)*roty(yaw)*[0;0;1]
-      raycast_endpoints.col(num_pixel_cols*v + u) *= max_range/raycast_endpoints.col(num_pixel_cols*v + u).norm();
+        1.0); // simulate the depth sensor;
+      raycast_endpoints.col(num_pixel_cols*v + u) *= MAX_SCAN_DIST/(raycast_endpoints.col(num_pixel_cols*v + u).norm());
     }
   }
 
@@ -327,7 +329,7 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
   Q.setZero();
   double K = 0.;
 
-  double icp_var = 0.01; // m
+  double icp_var = 0.05; // m
   double joint_known_fb_var = 0.1; // m
   double joint_known_encoder_var = 0.001; // radian
   double joint_limit_var = 0.01; // one-sided, radians
@@ -501,19 +503,26 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
     manipuland->collisionRaycast(manipuland_kinematics_cache,origins,raycast_endpoints_world,distances,normals,body_idx);
     printf("Raycast took %f\n", getUnixTime() - before_raycast);
 
-    // initialize observation SDF to Inf where the measurement return is in front of the real return
+
+    // fix the raycast distances to behave like the kinect distances:
+    // i.e. the distance is the z-distance of the intersection point in the camera origin frame
+    // and also initialize observation SDF to Inf where the measurement return is in front of the real return
     // and 0 otherwise
     Eigen::MatrixXd observation_sdf_input = MatrixXd::Constant(num_pixel_rows, num_pixel_cols, 0.0);
     for (int i=0; i<num_pixel_rows; i++) {
       for (int j=0; j<num_pixel_cols; j++) {
+        // fix distance
+        long int thisind = i*num_pixel_cols+j;
+        // this could be done with trig instead by I think this is just as efficient?
+        distances(thisind) = distances(thisind)*raycast_endpoints(2, thisind)/MAX_SCAN_DIST;
         if (i < depth_image.rows() && j < depth_image.cols() && 
-          distances(i*num_pixel_cols + j) > 0. && 
-          distances(i*num_pixel_cols + j) < depth_image(i, j)){
+          distances(thisind) > 0. && 
+          distances(thisind) < depth_image(i, j)){
           observation_sdf_input(i, j) = INF;
         }
   //      int thisind = i*num_pixel_cols+j;
   //      if (j % 20 == 0 && distances(thisind) > 0.){
-  //        Vector3d endpt = kinect2world*(raycast_endpoints.col(thisind)*distances(thisind)/30.); //warning, hardcoded scan max dist
+  //        Vector3d endpt = kinect2world*(raycast_endpoints.col(thisind)*distances(thisind)/MAX_SCAN_DIST.);
   //        Vector3d endpt2 = kinect2world*Vector3d( (((double) j)- kcal->intrinsics_depth.cx)*depth_image(i, j) / kcal->intrinsics_rgb.fx,
   //                        (((double) i)- kcal->intrinsics_depth.cy)*depth_image(i, j) / kcal->intrinsics_rgb.fx,
   //                        depth_image(i, j));
@@ -552,6 +561,7 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
       image_bg = image_bg / max;
     Mat image_disp;
     addWeighted(image, 1.0, image_bg, 0.0, 0.0, image_disp);
+    resize(image_disp, image_disp, Size(640, 480));
     imshow("IRB140EstimatorDebug", image_disp);
 
     // calculate projection direction to try to resolve this.
@@ -578,51 +588,55 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
         Matrix3Xd z(3, num_points_on_body[bdy_i]);
         Matrix3Xd z_corrected_depth = MatrixXd::Constant(3, num_points_on_body[bdy_i], 0.0);
         Matrix3Xd z_corrected_lateral = MatrixXd::Constant(3, num_points_on_body[bdy_i], 0.0);
-        std::vector<bool> depth_correction(num_points_on_body[bdy_i]);
+
+        enum DepthCorrections { DC_NONE, DC_LATERAL, DC_DEPTH };
+        std::vector<DepthCorrections> depth_correction(num_points_on_body[bdy_i], DC_NONE);
 
         for (int i=0; i<num_pixel_rows; i++) {
           for (int j=0; j<num_pixel_cols; j++) {
             long int thisind = i*num_pixel_cols + j;
             if (body_idx[thisind] == bdy_i){
               // project depth into world:
-              Vector3d endpt = origin + distances(thisind) * (raycast_endpoints_world.block<3, 1>(0, thisind) - origin)/30.; //warning, hardcoded scan max dist
+              Vector3d endpt = origin + distances(thisind) * ((raycast_endpoints_world.block<3, 1>(0, thisind) - origin)/raycast_endpoints(2, thisind));
 
               // Lateral correction
-              if (observation_sdf(thisind) > 0.0 && observation_sdf(thisind) < INF && (observation_sdf(thisind) < fabs(distances[thisind] - depth_image(i, j))) ) {
-                Vector3d camera_correction_vector;
-                camera_correction_vector(0) = ((double)(j - mapping_col(i, j)))*distances(thisind)*constant;
-                camera_correction_vector(1) = ((double)(i - mapping_row(i, j)))*distances(thisind)*constant;
+              Vector3d camera_correction_vector;
+              if (observation_sdf(thisind) > 0.0 && observation_sdf(thisind) < INF){
+                camera_correction_vector(0) = ((double)(j - mapping_col(i, j)))*distances[thisind]*constant;
+                camera_correction_vector(1) = ((double)(i - mapping_row(i, j)))*distances[thisind]*constant;
                 camera_correction_vector(2) = 0.0;
+                
                 Vector3d world_correction_vector = kinect2world.rotation()*camera_correction_vector;
-                z_corrected_lateral.block<3,1>(0, k) = endpt + world_correction_vector;
-                z.block<3, 1>(0, k) = endpt;
-                depth_correction[k] = false;
-                k++;
 
-                if (thisind % 10 == 0){
-                  bot_lcmgl_begin(lcmgl_measurement_model_, LCMGL_LINES);
-                  bot_lcmgl_line_width(lcmgl_measurement_model_, 1.0f);
-                  bot_lcmgl_color3f(lcmgl_measurement_model_, 1, 0, 0);  
-                  bot_lcmgl_vertex3f(lcmgl_measurement_model_, endpt(0), endpt(1), endpt(2));
-                  bot_lcmgl_vertex3f(lcmgl_measurement_model_, endpt(0)+world_correction_vector(0), endpt(1)+world_correction_vector(1), endpt(2)+world_correction_vector(2));
-                  bot_lcmgl_end(lcmgl_measurement_model_);  
+                if (camera_correction_vector.norm() < fabs(distances[thisind] - depth_image(i, j))) { 
+                  z_corrected_lateral.block<3,1>(0, k) = endpt + world_correction_vector;
+                  z.block<3, 1>(0, k) = endpt;
+                  depth_correction[k] = DC_LATERAL;
+                  k++;
+
+                  if (thisind % 1 == 0){
+                    bot_lcmgl_begin(lcmgl_measurement_model_, LCMGL_LINES);
+                    bot_lcmgl_line_width(lcmgl_measurement_model_, 5.0f);
+                    bot_lcmgl_color3f(lcmgl_measurement_model_, 0, 0, 1);  
+                    bot_lcmgl_vertex3f(lcmgl_measurement_model_, endpt(0), endpt(1), endpt(2));
+                    bot_lcmgl_vertex3f(lcmgl_measurement_model_, endpt(0)+world_correction_vector(0), endpt(1)+world_correction_vector(1), endpt(2)+world_correction_vector(2));
+                    bot_lcmgl_end(lcmgl_measurement_model_);  
+                  }
+
                 }
               } 
               // Depth correction term
-              else if (distances[thisind] > 0. && distances[thisind] < depth_image(i, j) && fabs(distances[thisind] - depth_image(i, j)) < 0.1 ){
+              if (observation_sdf(thisind) >= INF && fabs(distances[thisind] - depth_image(i, j)) < 0.5 ){
                 // simply push back to "correct" depth
-                // todo: recover this from point cloud instead..
-                //printf("raycast %f vs distance %f\n", distances[thisind], depth_image(i, j));
-                Vector3d corrected_endpt = origin + depth_image(i, j) * (raycast_endpoints_world.block<3, 1>(0, thisind) - origin) / 30.;
-
-                z_corrected_depth.block<3,1>(0, k) = corrected_endpt;
+                Vector3d corrected_endpt = origin + depth_image(i, j) * ((raycast_endpoints_world.block<3, 1>(0, thisind) - origin) / raycast_endpoints(2, thisind));
                 z.block<3, 1>(0, k) = endpt;
-                depth_correction[k] = true;
+                z_corrected_depth.block<3,1>(0, k) = corrected_endpt;
+                depth_correction[k] = DC_DEPTH;
                 k++;
 
-                if (thisind % 10 == 0){
+                if (thisind % 1 == 0){
                   bot_lcmgl_begin(lcmgl_measurement_model_, LCMGL_LINES);
-                  bot_lcmgl_line_width(lcmgl_measurement_model_, 1.0f);
+                  bot_lcmgl_line_width(lcmgl_measurement_model_, 5.0f);
                   bot_lcmgl_color3f(lcmgl_measurement_model_, 0, 1, 0);  
                   bot_lcmgl_vertex3f(lcmgl_measurement_model_, endpt(0), endpt(1), endpt(2));
                   bot_lcmgl_vertex3f(lcmgl_measurement_model_, corrected_endpt(0), corrected_endpt(1), corrected_endpt(2));
@@ -644,18 +658,20 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
         // forwardkin to get our jacobians at the project points on the body
         auto J = manipuland->transformPointsJacobian(manipuland_kinematics_cache, z_body, bdy_i, 0, false);
 
+        // apply corrections in the big linear solve
         for (int j=0; j < z.cols(); j++){
           MatrixXd Ks(3, 1);
-          if (depth_correction[j]){
+          if (depth_correction[j] == DC_DEPTH){
             Ks = z_corrected_depth.col(j) - z.col(j) + J.block(3*j, 0, 3, nq)*q_old;
-          } else {
+          } else if (depth_correction[j] == DC_LATERAL) {
             Ks = z_corrected_lateral.col(j) - z.col(j)+ J.block(3*j, 0, 3, nq)*q_old;
+          } else {
+            continue;
           }
           f -= FREE_SPACE_WEIGHT*(2. * Ks.transpose() * J.block(3*j, 0, 3, nq)).transpose();
           Q += FREE_SPACE_WEIGHT*(2. *  J.block(3*j, 0, 3, nq).transpose() * J.block(3*j, 0, 3, nq));
           K += FREE_SPACE_WEIGHT*Ks.squaredNorm();
         }
-        
       }
     }
 
@@ -663,8 +679,8 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
     bot_lcmgl_color3f(lcmgl_measurement_model_, 0, 0, 1);  
     bot_lcmgl_begin(lcmgl_measurement_model_, LCMGL_POINTS);
     for (int i = 0; i < distances.rows(); i++){
-      if (i % 10 == 0){
-        Vector3d endpt = origin + distances(i) * (raycast_endpoints_world.block<3, 1>(0, i) - origin)/30.; //warning, hardcoded scan max dist
+      if (i % 1 == 0){
+        Vector3d endpt = origin + distances(i) * ((raycast_endpoints_world.block<3, 1>(0, i) - origin) / raycast_endpoints(2, i));
         if (endpt(0) > manip_x_bounds[0] && endpt(0) < manip_x_bounds[1] && 
             endpt(1) > manip_y_bounds[0] && endpt(1) < manip_y_bounds[1] && 
             endpt(2) > manip_z_bounds[0] && endpt(2) < manip_z_bounds[1] &&

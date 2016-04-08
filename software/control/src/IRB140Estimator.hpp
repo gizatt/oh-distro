@@ -108,7 +108,7 @@ private:
   int num_pixel_cols, num_pixel_rows;
 
   double last_update_time;
-  double timestep = 0.001;
+  double timestep = 0.02; // 50 hz target to not overload director
 
   lcm::LCM lcm;
   bot_lcmgl_t* lcmgl_lidar_ = NULL;
