@@ -1,5 +1,6 @@
 #undef NDEBUG
 #include <assert.h> 
+#include <fstream>
 #include "IRB140Estimator.hpp"
 #include "drake/util/convexHull.h"
 #include "zlib.h"
@@ -808,9 +809,50 @@ void IRB140Estimator::setupSubscriptions(const char* state_channelname,
   kinect_frame_sub->setQueueCapacity(1);
   auto state_sub = lcm.subscribe(state_channelname, &IRB140Estimator::handleRobotStateMsg, this);
   state_sub->setQueueCapacity(1);
+  auto save_pc_sub = lcm.subscribe("IRB140_ESTIMATOR_SAVE_POINTCLOUD", &IRB140Estimator::handleSavePointcloudMsg, this);
+  save_pc_sub->setQueueCapacity(1);
+
  // auto hand_state_sub = lcm.subscribe(hand_state_channelname, &IRB140Estimator::handleLeftHandStateMsg, this);
  // hand_state_sub->setQueueCapacity(1);
 
+}
+
+void IRB140Estimator::handleSavePointcloudMsg(const lcm::ReceiveBuffer* rbuf,
+                           const std::string& chan,
+                           const bot_core::raw_t* msg){
+  string filename(msg->data.begin(), msg->data.end());
+  printf("####Received save command on channel %s to file %s\n", chan.c_str(), filename.c_str());
+
+  pcl::PointCloud<pcl::PointXYZRGB> full_cloud;
+  latest_cloud_mutex.lock();
+  full_cloud = latest_cloud;
+  latest_cloud_mutex.unlock();
+
+  // transform into world frame
+  Eigen::Isometry3d kinect2tag;
+  long long utime = 0;
+  this->get_trans_with_utime("KINECT_RGB", "KINECT_TO_APRILTAG", utime, kinect2tag);
+  Eigen::Isometry3d world2tag;
+  long long utime2 = 0;
+  this->get_trans_with_utime("local", "robot_yplus_tag", utime2, world2tag);
+  Eigen::Isometry3d kinect2world =  world2tag.inverse() * kinect2tag;
+  pcl::transformPointCloud(full_cloud, full_cloud, kinect2world.matrix());
+
+  // save points in the manip bounds
+  ofstream ofile(filename.c_str(), ofstream::out);  
+  // first point is camera point in world frame
+  Eigen::Vector3d camera_point = kinect2world*Eigen::Vector3d::Zero();
+  ofile << camera_point[0] << ", " << camera_point[1] << ", " << camera_point[2] << endl;
+  
+  // rest are points in workspace in world frame
+  for (auto pt = full_cloud.begin(); pt != full_cloud.end(); pt++){
+    if (pt->x > manip_x_bounds[0] && pt->x < manip_x_bounds[1] && 
+        pt->y > manip_y_bounds[0] && pt->y < manip_y_bounds[1] && 
+        pt->z > manip_z_bounds[0] && pt->z < manip_z_bounds[1]){
+      ofile << pt->x << ", " << pt->y << ", " << pt->z << endl;
+    }
+  }
+  ofile.close();
 }
 
 void IRB140Estimator::handlePlanarLidarMsg(const lcm::ReceiveBuffer* rbuf,

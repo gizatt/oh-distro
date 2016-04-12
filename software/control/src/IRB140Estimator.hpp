@@ -13,6 +13,7 @@
 #include "lcmtypes/drake/lcmt_robot_state.hpp"
 #include "bot_core/planar_lidar_t.hpp"
 #include "bot_core/rigid_transform_t.hpp"
+#include "bot_core/raw_t.hpp"
 #include "lcmtypes/kinect/frame_msg_t.hpp"
 #include "lcmtypes/bot_core/robot_state_t.hpp"
 #include <kinect/kinect-utils.h>
@@ -62,6 +63,10 @@ public:
   void initBotConfig(const char* filename);
   int get_trans_with_utime(std::string from_frame, std::string to_frame,
                                long long utime, Eigen::Isometry3d & mat);
+
+  void handleSavePointcloudMsg(const lcm::ReceiveBuffer* rbuf,
+                           const std::string& chan,
+                           const bot_core::raw_t* msg);
 
   void handlePlanarLidarMsg(const lcm::ReceiveBuffer* rbuf,
                            const std::string& chan,
