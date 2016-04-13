@@ -53,6 +53,7 @@ int main(int argc, char** argv) {
   manipuland->compile();
   */
 
+/*
   // arm and table and cardboard box with lid
   std::shared_ptr<RigidBodyTree> manipuland(new RigidBodyTree(std::string(drc_path) + "/software/control/src/urdf/irb140_chull_robotiq_actuated_fingers.urdf"));
   manipuland->addRobotFromURDF(std::string(drc_path) + "/software/control/src/desk.urdf", DrakeJoint::ROLLPITCHYAW);
@@ -62,7 +63,19 @@ int main(int argc, char** argv) {
   x0_manipuland.block<6, 1>(manipuland->num_positions-16, 0) << 0.67, 0.0, 0.45, 0.0, 0.0, 0.0;
   x0_manipuland.block<6, 1>(manipuland->num_positions-10, 0) << 0.67, 0.0, 0.71, 0.0, 0.0, 0.0, -0.8, -0.8, -0.8, -0.8;
   manipuland->compile();
+*/
 
+  // arm and table and cardboard box  with lid and jasime tea box inside that box
+  std::shared_ptr<RigidBodyTree> manipuland(new RigidBodyTree(std::string(drc_path) + "/software/control/src/urdf/irb140_chull_robotiq_actuated_fingers.urdf"));
+  manipuland->addRobotFromURDF(std::string(drc_path) + "/software/control/src/desk.urdf", DrakeJoint::ROLLPITCHYAW);
+  manipuland->addRobotFromURDF(std::string(drc_path) + "/software/control/src/urdf/cardbox_box_hollow_with_lid.urdf", DrakeJoint::ROLLPITCHYAW);
+  manipuland->addRobotFromURDF(std::string(drc_path) + "/software/control/src/jasmine_tea_box.urdf", DrakeJoint::ROLLPITCHYAW);
+  VectorXd x0_manipuland = VectorXd::Zero(manipuland->num_positions + manipuland->num_velocities);
+  x0_manipuland.block<6, 1>(0, 0) << -.17, 0.0, .91, 0.0, 0.0, 0.0;
+  x0_manipuland.block<6, 1>(manipuland->num_positions-22, 0) << 0.67, 0.0, 0.7, 0.0, 0.0, 0.0;
+  x0_manipuland.block<6, 1>(manipuland->num_positions-16, 0) << 0.67, 0.0, 0.71, 0.0, 0.0, 0.0, -0.8, -0.8, -0.8, -0.8;
+  x0_manipuland.block<6, 1>(manipuland->num_positions-6, 0) << 0.67, 0.0, 0.71, 0.0, 0.0, 0.0;
+  manipuland->compile();
   std::unique_ptr<IRB140Estimator> estimator(new IRB140Estimator(arm, manipuland, x0_arm, x0_manipuland,
     (std::string(drc_path) + "/software/config/irb140/irb140.cfg").c_str(), "EST_ROBOT_STATE", true, "ROBOTIQ_LEFT_STATE"));
   std::cout << "IRB140 Estimator Listening" << std::endl;
