@@ -72,8 +72,11 @@ int main(int argc, char** argv) {
   manipuland->addRobotFromURDF(std::string(drc_path) + "/software/control/src/jasmine_tea_box.urdf", DrakeJoint::ROLLPITCHYAW);
   VectorXd x0_manipuland = VectorXd::Zero(manipuland->num_positions + manipuland->num_velocities);
   x0_manipuland.block<6, 1>(0, 0) << -.17, 0.0, .91, 0.0, 0.0, 0.0;
-  x0_manipuland.block<6, 1>(manipuland->num_positions-22, 0) << 0.67, 0.0, 0.7, 0.0, 0.0, 0.0;
-  x0_manipuland.block<6, 1>(manipuland->num_positions-16, 0) << 0.67, 0.0, 0.71, 0.0, 0.0, 0.0, -0.8, -0.8, -0.8, -0.8;
+  x0_manipuland.block<6, 1>(manipuland->num_positions-22, 0) << 0.67, 0.0, 0.55, 0.0, 0.0, 0.0;
+  // lids half-open
+  //x0_manipuland.block<6, 1>(manipuland->num_positions-16, 0) << 0.67, 0.0, 0.71, 0.0, 0.0, 0.0, -0.8, -0.8, -0.8, -0.8;
+  // lids closed
+  x0_manipuland.block<6, 1>(manipuland->num_positions-16, 0) << 0.67, 0.0, 0.71, 0.0, 0.0, 0.0, -3.14, -3.14, -3.14, -3.14;
   x0_manipuland.block<6, 1>(manipuland->num_positions-6, 0) << 0.67, 0.0, 0.71, 0.0, 0.0, 0.0;
   manipuland->compile();
   std::unique_ptr<IRB140Estimator> estimator(new IRB140Estimator(arm, manipuland, x0_arm, x0_manipuland,
