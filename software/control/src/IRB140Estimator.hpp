@@ -95,6 +95,7 @@ private:
 
   Eigen::Matrix<double, Eigen::Dynamic, 1> x_arm;
   Eigen::Matrix<double, Eigen::Dynamic, 1> x_manipuland;
+  Eigen::Matrix<double, Eigen::Dynamic, 1> lambda_manipuland;
 
   std::mutex x_manipuland_measured_mutex;
   bool transcribe_published_floating_base;

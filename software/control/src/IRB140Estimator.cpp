@@ -772,11 +772,10 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
     }
     printf("Spent %f in joint limit constraints.\n", getUnixTime() - now);
   }
-  /*********************
-  **************************
+
+  /***********************************************
                        SOLVE
     *********************************************/
-
   if (K > 0.0){
     //cout << "f: " << f << endl;
     //cout << "Q: " << Q << endl;
@@ -843,7 +842,7 @@ void IRB140Estimator::handleSavePointcloudMsg(const lcm::ReceiveBuffer* rbuf,
   // first point is camera point in world frame
   Eigen::Vector3d camera_point = kinect2world*Eigen::Vector3d::Zero();
   ofile << camera_point[0] << ", " << camera_point[1] << ", " << camera_point[2] << endl;
-  
+
   // rest are points in workspace in world frame
   for (auto pt = full_cloud.begin(); pt != full_cloud.end(); pt++){
     if (pt->x > manip_x_bounds[0] && pt->x < manip_x_bounds[1] && 
@@ -978,8 +977,8 @@ void IRB140Estimator::handleKinectFrameMsg(const lcm::ReceiveBuffer* rbuf,
         // not dealing with color yet
 
         double constant = 1.0f / kcal->intrinsics_rgb.fx ;
-        int full_v = floor(((double)v)*downsample_amount);
-        int full_u = floor(((double)u)*downsample_amount);
+        int full_v = (int)floor(((double)v)*downsample_amount) + rand()%(int)floor(latest_cloud.height / downsample_amount);
+        int full_u = (int)floor(((double)u)*downsample_amount) + rand()%(int)floor(latest_cloud.width / downsample_amount);
         double disparity_d = depth_data[full_v*msg->depth.width+full_u]  / 1000.; // convert to m
 
         if (disparity_d!=0){
