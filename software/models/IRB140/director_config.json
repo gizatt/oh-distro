@@ -10,7 +10,7 @@
 
   "fittingConfig": {
     "arm": {
-      "urdf": "../../control/src/urdf/irb140_chull_robotiq.urdf",
+      "urdf": "../../control/src/urdf/irb140_chull_robotiq_actuated_fingers.urdf",
       "update_channel": "EST_MANIPULAND_STATE_IRB140_-_M2004C_Complete_base.SLDASM",
       "drakeJointNames": [
         "base_x",

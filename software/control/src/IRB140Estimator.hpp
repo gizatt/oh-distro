@@ -16,10 +16,8 @@
 #include "bot_core/raw_t.hpp"
 #include "lcmtypes/kinect/frame_msg_t.hpp"
 #include "lcmtypes/bot_core/robot_state_t.hpp"
+#include "lcmtypes/bot_core/joint_state_t.hpp"
 #include <kinect/kinect-utils.h>
-#include "pcl/point_cloud.h"
-#include "pcl/common/transforms.h"
-#include "pcl/point_types.h"
 #include <mutex>
 #include <bot_lcmgl_client/lcmgl.h>
 #include <bot_frames/bot_frames.h>
@@ -56,7 +54,7 @@ public:
   }
 
   void update(double dt);
-  void performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen::MatrixXd& depth_image, pcl::PointCloud<pcl::PointXYZRGB>& full_cloud, Eigen::Matrix3Xd& points);
+  void performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen::MatrixXd& depth_image, Eigen::Matrix3Xd& points);
 
   void setupSubscriptions(const char* state_channelname,
     const char* hand_state_channelname);
@@ -86,7 +84,7 @@ public:
 
   void handleLeftHandStateMsg(const lcm::ReceiveBuffer* rbuf,
                            const std::string& chan,
-                           const bot_core::robot_state_t* msg);
+                           const bot_core::joint_state_t* msg);
 
 private:
   std::shared_ptr<RigidBodyTree> arm;
@@ -104,7 +102,7 @@ private:
 
   std::mutex latest_cloud_mutex;
   KinectCalibration* kcal;
-  pcl::PointCloud<pcl::PointXYZRGB> latest_cloud;
+  Eigen::Matrix<double, 3, Eigen::Dynamic> latest_cloud;
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> latest_depth_image;
   Eigen::Matrix<double, 3, Eigen::Dynamic> raycast_endpoints;
 

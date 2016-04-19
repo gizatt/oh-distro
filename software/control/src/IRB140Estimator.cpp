@@ -104,17 +104,8 @@ IRB140Estimator::IRB140Estimator(std::shared_ptr<RigidBodyTree> arm, std::shared
   num_pixel_cols = (int) ceil( ((double)input_num_pixel_cols) / downsample_amount);
   num_pixel_rows = (int) ceil( ((double)input_num_pixel_rows) / downsample_amount);
 
+  latest_depth_image.resize(input_num_pixel_rows, input_num_pixel_cols);
   raycast_endpoints.resize(3,num_pixel_rows*num_pixel_cols);
-  double constant = 1.0f / kcal->intrinsics_rgb.fx ;
-  for (size_t v=0; v<num_pixel_rows; v++) {
-    for (size_t u=0; u<num_pixel_cols; u++) {
-      raycast_endpoints.col(num_pixel_cols*v + u) = Vector3d(
-        (((double) u)*downsample_amount- kcal->intrinsics_depth.cx)*1.0*constant,
-        (((double) v)*downsample_amount- kcal->intrinsics_depth.cy)*1.0*constant, 
-        1.0); // simulate the depth sensor;
-      raycast_endpoints.col(num_pixel_cols*v + u) *= MAX_SCAN_DIST/(raycast_endpoints.col(num_pixel_cols*v + u).norm());
-    }
-  }
 
   x_manipuland_measured.resize(x0_manipuland.rows());
   x_manipuland_measured_known.resize(x0_manipuland.rows());
@@ -127,7 +118,6 @@ IRB140Estimator::IRB140Estimator(std::shared_ptr<RigidBodyTree> arm, std::shared
   }
 */
 
-  latest_depth_image.resize(num_pixel_rows, num_pixel_cols);
 
   this->setupSubscriptions(state_channelname, hand_state_channelname);
 
@@ -175,12 +165,12 @@ int IRB140Estimator::get_trans_with_utime(std::string from_frame, std::string to
 }
 
 void IRB140Estimator::update(double dt){
-  pcl::PointCloud<pcl::PointXYZRGB> full_cloud;
-  Eigen::MatrixXd depth_image;
+  Eigen::Matrix3Xd full_cloud;
+  Eigen::MatrixXd full_depth_image;
   latest_cloud_mutex.lock();
   full_cloud = latest_cloud;
-  depth_image.resize(latest_depth_image.rows(), latest_depth_image.cols());
-  depth_image= latest_depth_image;
+  full_depth_image.resize(latest_depth_image.rows(), latest_depth_image.cols());
+  full_depth_image= latest_depth_image;
   latest_cloud_mutex.unlock();
 
   VectorXd q_old = x_manipuland.block(0, 0, manipuland->num_positions, 1);
@@ -195,65 +185,52 @@ void IRB140Estimator::update(double dt){
   long long utime2 = 0;
   this->get_trans_with_utime("local", "robot_yplus_tag", utime2, world2tag);
   Eigen::Isometry3d kinect2world =  world2tag.inverse() * kinect2tag;
-  pcl::transformPointCloud(full_cloud, full_cloud, kinect2world.matrix());
+  full_cloud = kinect2world * full_cloud;
 
-  cout << kinect2tag.matrix() << endl;
-  cout << world2tag.matrix() << endl;
+  // do randomized downsampling, populating data stores to be used by ICP
+  Matrix3Xd points(3, full_cloud.cols()); int i=0;
+  Eigen::MatrixXd depth_image; depth_image.resize(num_pixel_rows, num_pixel_cols);
+  double constant = 1.0f / kcal->intrinsics_rgb.fx ;
+  if (full_cloud.cols() > 0){
+    if (full_cloud.cols() != input_num_pixel_cols*input_num_pixel_rows){
+      printf("WARNING: SOMEHOW FULL CLOUD HAS WRONG NUMBER OF ENTRIES.\n");
+    }
+    for (size_t v=0; v<num_pixel_rows; v++) {
+      for (size_t u=0; u<num_pixel_cols; u++) {
+        int full_v = (int)floor(((double)v)*downsample_amount) + rand()%(int)downsample_amount;
+        int full_u = (int)floor(((double)u)*downsample_amount) + rand()%(int)downsample_amount;
 
-  // cut down to just point cloud in our manipulation space
-  //(todo: bring in this info externally somehow)
-  Matrix3Xd points(3, full_cloud.size());
-  int i = 0;
-  for (auto pt = full_cloud.begin(); pt != full_cloud.end(); pt++){
-    if (pt->x > manip_x_bounds[0] && pt->x < manip_x_bounds[1] && 
-        pt->y > manip_y_bounds[0] && pt->y < manip_y_bounds[1] && 
-        pt->z > manip_z_bounds[0] && pt->z < manip_z_bounds[1]){
-      assert(pt->x != 0.0);
-      points(0, i) = pt->x;
-      points(1, i) = pt->y;
-      points(2, i) = pt->z;
-      i++;
+        // cut down to just point cloud in our manipulation space
+        //(todo: bring in this info externally somehow)
+        Eigen::Vector3d pt = full_cloud.block<3, 1>(0, full_v*input_num_pixel_cols + full_u);
+        if (full_depth_image(full_v, full_u) > 0. &&
+            pt[0] > manip_x_bounds[0] && pt[0] < manip_x_bounds[1] && 
+            pt[1] > manip_y_bounds[0] && pt[1] < manip_y_bounds[1] && 
+            pt[2] > manip_z_bounds[0] && pt[2] < manip_z_bounds[1]){
+          assert(pt[0] != 0.0);
+          points.block<3, 1>(0, i) = pt;
+          i++;
+        }
+
+        // populate depth image using our random sample
+        depth_image(v, u) = full_depth_image(full_v, full_u); 
+
+        // populate raycast endpoints using our random sample
+        raycast_endpoints.col(num_pixel_cols*v + u) = Vector3d(
+          (((double) full_u)- kcal->intrinsics_depth.cx)*1.0*constant,
+          (((double) full_v)- kcal->intrinsics_depth.cy)*1.0*constant, 
+          1.0); // simulate the depth sensor;
+        raycast_endpoints.col(num_pixel_cols*v + u) *= MAX_SCAN_DIST/(raycast_endpoints.col(num_pixel_cols*v + u).norm());
+      }
     }
   }
   // conservativeResize keeps old coefficients
   // (regular resize would clear them)
   points.conservativeResize(3, i);
 
-/*
-  // visualize manipuland
-  bot_lcmgl_point_size(lcmgl_manipuland_, 4.5f);
-  bot_lcmgl_color3f(lcmgl_manipuland_, 1, 0, 1);
-  bot_lcmgl_push_matrix(lcmgl_manipuland_);
-  bot_lcmgl_translated(lcmgl_manipuland_, x_manipuland[0], x_manipuland[1], x_manipuland[2]);
-  bot_lcmgl_rotated(lcmgl_manipuland_,180./3.1415* x_manipuland[5], 0.0, 0.0, 1.0);
-  bot_lcmgl_rotated(lcmgl_manipuland_, 180./3.1415*x_manipuland[4], 0.0, 1.0, 0.0);
-  bot_lcmgl_rotated(lcmgl_manipuland_, 180./3.1415*x_manipuland[3], 1.0, 0.0, 0.0);
-  //double zeros[3] = {0,0,-0.105};
-  //bot_lcmgl_cylinder(lcmgl_manipuland_, zeros, 0.0325, 0.0325, 0.21,
-  //      10, 10);
-  double zeros[3] = {0,0,0};
-  float size[3] = {0.14, 0.07, 0.225};
-  bot_lcmgl_box(lcmgl_manipuland_, zeros, size);
-  bot_lcmgl_pop_matrix(lcmgl_manipuland_);
-  bot_lcmgl_color3f(lcmgl_manipuland_, 0, 1, 1);
-  bot_lcmgl_push_matrix(lcmgl_manipuland_);
-  bot_lcmgl_translated(lcmgl_manipuland_, x_manipuland[6], x_manipuland[7], x_manipuland[8]);
-  bot_lcmgl_rotated(lcmgl_manipuland_,180./3.1415* x_manipuland[11], 0.0, 0.0, 1.0);
-  bot_lcmgl_rotated(lcmgl_manipuland_, 180./3.1415*x_manipuland[10], 0.0, 1.0, 0.0);
-  bot_lcmgl_rotated(lcmgl_manipuland_, 180./3.1415*x_manipuland[9], 1.0, 0.0, 0.0);
-  float size_table[3] = {0.3, 0.3, 0.05};
-  double zeros_table[3] = {0,0,0.};
-  bot_lcmgl_box(lcmgl_manipuland_, zeros_table, size_table);
-  bot_lcmgl_pop_matrix(lcmgl_manipuland_);
-  bot_lcmgl_switch_buffer(lcmgl_manipuland_);  
-*/
-
-  //printf("Visualizing state:\n");
-  //cout << x_manipuland.transpose() << endl;
-  //visualizer->output(getUnixTime(), VectorXd(), x_manipuland);
 
   double now=getUnixTime();
-  this->performCompleteICP(kinect2world, depth_image, full_cloud, points);
+  this->performCompleteICP(kinect2world, depth_image, points);
   printf("elapsed in articulated, constrainted ICP: %f\n", getUnixTime() - now);
 
   // visualize point cloud
@@ -312,7 +289,7 @@ void IRB140Estimator::update(double dt){
   }
 }  
 
-void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen::MatrixXd& depth_image, pcl::PointCloud<pcl::PointXYZRGB>& full_cloud, Eigen::Matrix3Xd& points){
+void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen::MatrixXd& depth_image, Eigen::Matrix3Xd& points){
   int nq = manipuland->num_positions;
   VectorXd q_old = x_manipuland.block(0, 0, manipuland->num_positions, 1);
   manipuland_kinematics_cache.initialize(q_old);
@@ -349,7 +326,7 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
   double DYNAMICS_OTHER_WEIGHT = 1 / (2. * dynamics_other_var * dynamics_other_var);
 
   double MAX_CONSIDERED_ICP_DISTANCE = 0.05;
-  double MIN_CONSIDERED_JOINT_DISTANCE = 0.05;
+  double MIN_CONSIDERED_JOINT_DISTANCE = 0.03;
 
   /***********************************************
                 Articulated ICP 
@@ -665,7 +642,7 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
           if (depth_correction[j] == DC_DEPTH){
             Ks = z_corrected_depth.col(j) - z.col(j) + J.block(3*j, 0, 3, nq)*q_old;
           } else if (depth_correction[j] == DC_LATERAL) {
-            Ks = z_corrected_lateral.col(j) - z.col(j)+ J.block(3*j, 0, 3, nq)*q_old;
+            Ks = z_corrected_lateral.col(j) - z.col(j) + J.block(3*j, 0, 3, nq)*q_old;
           } else {
             continue;
           }
@@ -810,9 +787,8 @@ void IRB140Estimator::setupSubscriptions(const char* state_channelname,
   state_sub->setQueueCapacity(1);
   auto save_pc_sub = lcm.subscribe("IRB140_ESTIMATOR_SAVE_POINTCLOUD", &IRB140Estimator::handleSavePointcloudMsg, this);
   save_pc_sub->setQueueCapacity(1);
-
- // auto hand_state_sub = lcm.subscribe(hand_state_channelname, &IRB140Estimator::handleLeftHandStateMsg, this);
- // hand_state_sub->setQueueCapacity(1);
+  auto hand_state_sub = lcm.subscribe(hand_state_channelname, &IRB140Estimator::handleLeftHandStateMsg, this);
+  hand_state_sub->setQueueCapacity(1);
 
 }
 
@@ -822,7 +798,7 @@ void IRB140Estimator::handleSavePointcloudMsg(const lcm::ReceiveBuffer* rbuf,
   string filename(msg->data.begin(), msg->data.end());
   printf("####Received save command on channel %s to file %s\n", chan.c_str(), filename.c_str());
 
-  pcl::PointCloud<pcl::PointXYZRGB> full_cloud;
+  Matrix3Xd full_cloud;
   latest_cloud_mutex.lock();
   full_cloud = latest_cloud;
   latest_cloud_mutex.unlock();
@@ -835,7 +811,7 @@ void IRB140Estimator::handleSavePointcloudMsg(const lcm::ReceiveBuffer* rbuf,
   long long utime2 = 0;
   this->get_trans_with_utime("local", "robot_yplus_tag", utime2, world2tag);
   Eigen::Isometry3d kinect2world =  world2tag.inverse() * kinect2tag;
-  pcl::transformPointCloud(full_cloud, full_cloud, kinect2world.matrix());
+  full_cloud = kinect2world*full_cloud;
 
   // save points in the manip bounds
   ofstream ofile(filename.c_str(), ofstream::out);  
@@ -844,11 +820,12 @@ void IRB140Estimator::handleSavePointcloudMsg(const lcm::ReceiveBuffer* rbuf,
   ofile << camera_point[0] << ", " << camera_point[1] << ", " << camera_point[2] << endl;
 
   // rest are points in workspace in world frame
-  for (auto pt = full_cloud.begin(); pt != full_cloud.end(); pt++){
-    if (pt->x > manip_x_bounds[0] && pt->x < manip_x_bounds[1] && 
-        pt->y > manip_y_bounds[0] && pt->y < manip_y_bounds[1] && 
-        pt->z > manip_z_bounds[0] && pt->z < manip_z_bounds[1]){
-      ofile << pt->x << ", " << pt->y << ", " << pt->z << endl;
+  for (int i=0; i < full_cloud.cols(); i++){
+    Vector3d pt = full_cloud.block<3,1>(0, i);
+    if (pt[0] > manip_x_bounds[0] && pt[0] < manip_x_bounds[1] && 
+        pt[1] > manip_y_bounds[0] && pt[1] < manip_y_bounds[1] && 
+        pt[2] > manip_z_bounds[0] && pt[2] < manip_z_bounds[1]){
+      ofile << pt[0] << ", " << pt[1] << ", " << pt[2] << endl;
     }
   }
   ofile.close();
@@ -872,7 +849,7 @@ void IRB140Estimator::handleSpindleFrameMsg(const lcm::ReceiveBuffer* rbuf,
 
 void IRB140Estimator::handleLeftHandStateMsg(const lcm::ReceiveBuffer* rbuf,
                            const std::string& chan,
-                           const bot_core::robot_state_t* msg){
+                           const bot_core::joint_state_t* msg){
   printf("Received hand state on channel  %s\n", chan.c_str());
   x_manipuland_measured_mutex.lock();
 
@@ -929,7 +906,6 @@ void IRB140Estimator::handleKinectFrameMsg(const lcm::ReceiveBuffer* rbuf,
   // this be in the Kinect driver or something?
 
   latest_cloud_mutex.lock();
-  latest_cloud.clear();
 
   std::vector<uint16_t> depth_data;
 
@@ -961,40 +937,30 @@ void IRB140Estimator::handleKinectFrameMsg(const lcm::ReceiveBuffer* rbuf,
     // 1.2.2 unpack raw byte data into float values in mm
 
     // NB: no depth return is given 0 range - and becomes 0,0,0 here
-    latest_cloud.width    = num_pixel_cols;
-    latest_cloud.height   = num_pixel_rows; 
-    latest_cloud.is_dense = false;
-    latest_cloud.points.resize (latest_cloud.width * latest_cloud.height);
-
-    if (latest_depth_image.cols() != latest_cloud.width && latest_depth_image.rows() != latest_cloud.height){
-      latest_depth_image.resize(latest_cloud.height, latest_cloud.width);
-    }
+    if (latest_depth_image.cols() != input_num_pixel_cols || latest_depth_image.rows() != input_num_pixel_rows)
+      latest_depth_image.resize(input_num_pixel_rows, input_num_pixel_cols);
+    if (latest_cloud.cols() != input_num_pixel_cols*input_num_pixel_rows)
+      latest_cloud.resize(3, input_num_pixel_cols*input_num_pixel_rows);
 
     latest_depth_image.setZero();
-    int j2=0;
-    for(int v=0; v<latest_cloud.height; v++) { // t2b self->height 480
-      for(int u=0; u<latest_cloud.width; u++ ) {  //l2r self->width 640
+    for(long int v=0; v<input_num_pixel_rows; v++) { // t2b self->height 480
+      for(long int u=0; u<input_num_pixel_cols; u++ ) {  //l2r self->width 640
         // not dealing with color yet
 
         double constant = 1.0f / kcal->intrinsics_rgb.fx ;
-        int full_v = (int)floor(((double)v)*downsample_amount) + rand()%(int)floor(latest_cloud.height / downsample_amount);
-        int full_u = (int)floor(((double)u)*downsample_amount) + rand()%(int)floor(latest_cloud.width / downsample_amount);
-        double disparity_d = depth_data[full_v*msg->depth.width+full_u]  / 1000.; // convert to m
+        double disparity_d = depth_data[v*msg->depth.width+u]  / 1000.; // convert to m
 
-        if (disparity_d!=0){
-          latest_cloud.points[j2].x = (((double) full_u)- kcal->intrinsics_depth.cx)*disparity_d*constant; //x right+
-          latest_cloud.points[j2].y = (((double) full_v)- kcal->intrinsics_depth.cy)*disparity_d*constant; //y down+
-          latest_cloud.points[j2].z = disparity_d;  //z forward+
-          latest_depth_image(v, u) = disparity_d;
-          j2++;
-        }
-
+        long int ind = v*input_num_pixel_cols + u;
+        latest_cloud(0, ind) = (((double) u)- kcal->intrinsics_depth.cx)*disparity_d*constant; //x right+
+        latest_cloud(1, ind) = (((double) v)- kcal->intrinsics_depth.cy)*disparity_d*constant; //y down+
+        latest_cloud(2, ind) = disparity_d;  //z forward+
+        latest_depth_image(v, u) = disparity_d;
       }
     }
-    latest_cloud.points.resize (j2);
   } else {
     printf("Can't unpack different Kinect data format yet.\n");
   }
   latest_cloud_mutex.unlock();
+  printf("Done here\n");
 
 }
