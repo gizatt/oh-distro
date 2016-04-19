@@ -101,8 +101,8 @@ IRB140Estimator::IRB140Estimator(std::shared_ptr<RigidBodyTree> arm, std::shared
   double max_yaw = half_yaw_fov;
   */
 
-  num_pixel_cols = (int) ceil( ((double)input_num_pixel_cols) / downsample_amount);
-  num_pixel_rows = (int) ceil( ((double)input_num_pixel_rows) / downsample_amount);
+  num_pixel_cols = (int) floor( ((double)input_num_pixel_cols) / downsample_amount);
+  num_pixel_rows = (int) floor( ((double)input_num_pixel_rows) / downsample_amount);
 
   latest_depth_image.resize(input_num_pixel_rows, input_num_pixel_cols);
   raycast_endpoints.resize(3,num_pixel_rows*num_pixel_cols);
@@ -197,8 +197,8 @@ void IRB140Estimator::update(double dt){
     }
     for (size_t v=0; v<num_pixel_rows; v++) {
       for (size_t u=0; u<num_pixel_cols; u++) {
-        int full_v = (int)floor(((double)v)*downsample_amount) + rand()%(int)downsample_amount;
-        int full_u = (int)floor(((double)u)*downsample_amount) + rand()%(int)downsample_amount;
+        int full_v = min((int)floor(((double)v)*downsample_amount) + rand()%(int)downsample_amount, input_num_pixel_rows);
+        int full_u = min((int)floor(((double)u)*downsample_amount) + rand()%(int)downsample_amount, input_num_pixel_cols);
 
         // cut down to just point cloud in our manipulation space
         //(todo: bring in this info externally somehow)
@@ -231,7 +231,7 @@ void IRB140Estimator::update(double dt){
 
   double now=getUnixTime();
   this->performCompleteICP(kinect2world, depth_image, points);
-  printf("elapsed in articulated, constrainted ICP: %f\n", getUnixTime() - now);
+  //printf("elapsed in articulated, constrainted ICP: %f\n", getUnixTime() - now);
 
   // visualize point cloud
   bot_lcmgl_point_size(lcmgl_lidar_, 4.5f);
@@ -247,7 +247,7 @@ void IRB140Estimator::update(double dt){
   bot_lcmgl_switch_buffer(lcmgl_lidar_);  
 
   // Publish the object state
-  cout << "Manipuland robot name vector: " << manipuland->robot_name.size() << endl;
+  //cout << "Manipuland robot name vector: " << manipuland->robot_name.size() << endl;
   for (int roboti=1; roboti < manipuland->robot_name.size(); roboti++){
     bot_core::robot_state_t manipulation_state;
     manipulation_state.utime = getUnixTime();
@@ -284,7 +284,7 @@ void IRB140Estimator::update(double dt){
     }
     manipulation_state.joint_effort.resize(manipulation_state.num_joints, 0.0);
     std::string channelname = "EST_MANIPULAND_STATE_" + robot_name;
-    cout << " published to " << channelname << endl;
+    //cout << " published to " << channelname << endl;
     lcm.publish(channelname, &manipulation_state);
   }
 }  
@@ -311,6 +311,7 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
   double joint_known_fb_var = 0.1; // m
   double joint_known_encoder_var = 0.001; // radian
   double joint_limit_var = 0.01; // one-sided, radians
+  double position_constraint_var = 0.001; // one-sided, radians
 
   double dynamics_floating_base_var = 0.0001; // m per frame
   double dynamics_other_var = 0.1; // rad per frame
@@ -320,6 +321,7 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
   double ICP_WEIGHT = 1 / (2. * icp_var * icp_var);
   double FREE_SPACE_WEIGHT = 1 / (2. * free_space_var * free_space_var);
   double JOINT_LIMIT_WEIGHT = 1 / (2. * joint_limit_var * joint_limit_var);
+  double POSITION_CONSTRAINT_WEIGHT = 1 / (2. * position_constraint_var * position_constraint_var);
   double JOINT_KNOWN_FLOATING_BASE_WEIGHT = 1 / (2. * joint_known_fb_var * joint_known_fb_var);
   double JOINT_KNOWN_ENCODER_WEIGHT = 1 / (2. * joint_known_encoder_var * joint_known_encoder_var);
   double DYNAMICS_FLOATING_BASE_WEIGHT = 1 / (2. * dynamics_floating_base_var * dynamics_floating_base_var);
@@ -342,7 +344,7 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
     double now1 = getUnixTime();
     manipuland->collisionDetectFromPoints(manipuland_kinematics_cache, points,
                          phi, normal, x, body_x, body_idx, false);
-    printf("SDF took %f\n", getUnixTime()-now1);
+    //printf("SDF took %f\n", getUnixTime()-now1);
 
     // for every unique body points have returned onto...
     std::vector<int> num_points_on_body(manipuland->bodies.size(), 0);
@@ -454,7 +456,7 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
     }
     bot_lcmgl_switch_buffer(lcmgl_icp_);  
 
-    printf("Spend %f in Articulated ICP constraints.\n", getUnixTime() - now);
+    //printf("Spend %f in Articulated ICP constraints.\n", getUnixTime() - now);
   }
 
   /***********************************************
@@ -479,7 +481,7 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
     Matrix3Xd raycast_endpoints_world = kinect2world*raycast_endpoints;
     double before_raycast = getUnixTime();
     manipuland->collisionRaycast(manipuland_kinematics_cache,origins,raycast_endpoints_world,distances,normals,body_idx);
-    printf("Raycast took %f\n", getUnixTime() - before_raycast);
+    //printf("Raycast took %f\n", getUnixTime() - before_raycast);
 
 
     // fix the raycast distances to behave like the kinect distances:
@@ -670,7 +672,7 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
     bot_lcmgl_end(lcmgl_measurement_model_);
     bot_lcmgl_switch_buffer(lcmgl_measurement_model_);  
 
-    printf("Spend %f in free space constraints.\n", getUnixTime() - now);
+    //printf("Spend %f in free space constraints.\n", getUnixTime() - now);
   }
 
   /***********************************************
@@ -691,7 +693,7 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
       f(i) -= DYNAMICS_OTHER_WEIGHT*q_old(i);
       K += DYNAMICS_OTHER_WEIGHT*q_old(i)*q_old(i);
     }
-    printf("Spent %f in joint known weight constraints.\n", getUnixTime() - now);
+    //printf("Spent %f in joint known weight constraints.\n", getUnixTime() - now);
   }
 
 
@@ -721,7 +723,7 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
         K += JOINT_KNOWN_ENCODER_WEIGHT*q_measured(i)*q_measured(i);
       }
     }
-    printf("Spent %f in joint known weight constraints.\n", getUnixTime() - now);
+    //printf("Spent %f in joint known weight constraints.\n", getUnixTime() - now);
   }
 
   /***********************************************
@@ -747,7 +749,7 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
         K += JOINT_LIMIT_WEIGHT*manipuland->joint_limit_max[i]*manipuland->joint_limit_max[i];
       }
     }
-    printf("Spent %f in joint limit constraints.\n", getUnixTime() - now);
+    //printf("Spent %f in joint limit constraints.\n", getUnixTime() - now);
   }
 
   /***********************************************
@@ -759,7 +761,7 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
     //cout << "K: " << K << endl;
     // Solve the unconstrained QP!
     VectorXd q_new = Q.colPivHouseholderQr().solve(-f);
-    cout << "q_new: " << q_new.transpose() << endl;
+    //cout << "q_new: " << q_new.transpose() << endl;
 
     // apply joint lim
     /*
@@ -841,8 +843,8 @@ void IRB140Estimator::handlePlanarLidarMsg(const lcm::ReceiveBuffer* rbuf,
 void IRB140Estimator::handleSpindleFrameMsg(const lcm::ReceiveBuffer* rbuf,
                            const std::string& chan,
                            const bot_core::rigid_transform_t* msg){
-  printf("Received transform on channel %s\n", chan.c_str());
-  cout << msg->trans << "," << msg->quat << endl;
+  //printf("Received transform on channel %s\n", chan.c_str());
+  //cout << msg->trans << "," << msg->quat << endl;
   // todo: transform them all by the lidar frame
 }
 
@@ -850,7 +852,7 @@ void IRB140Estimator::handleSpindleFrameMsg(const lcm::ReceiveBuffer* rbuf,
 void IRB140Estimator::handleLeftHandStateMsg(const lcm::ReceiveBuffer* rbuf,
                            const std::string& chan,
                            const bot_core::joint_state_t* msg){
-  printf("Received hand state on channel  %s\n", chan.c_str());
+  //printf("Received hand state on channel  %s\n", chan.c_str());
   x_manipuland_measured_mutex.lock();
 
   map<string, int> map = manipuland->computePositionNameToIndexMap();
@@ -869,7 +871,7 @@ void IRB140Estimator::handleLeftHandStateMsg(const lcm::ReceiveBuffer* rbuf,
 void IRB140Estimator::handleRobotStateMsg(const lcm::ReceiveBuffer* rbuf,
                          const std::string& chan,
                          const bot_core::robot_state_t* msg){
-  printf("Received robot state on channel  %s\n", chan.c_str());
+  //printf("Received robot state on channel  %s\n", chan.c_str());
   x_manipuland_measured_mutex.lock();
 
   if (transcribe_published_floating_base){
@@ -900,7 +902,7 @@ void IRB140Estimator::handleRobotStateMsg(const lcm::ReceiveBuffer* rbuf,
 void IRB140Estimator::handleKinectFrameMsg(const lcm::ReceiveBuffer* rbuf,
                            const std::string& chan,
                            const kinect::frame_msg_t* msg){
-  printf("Received kinect frame on channel %s\n", chan.c_str());
+  //printf("Received kinect frame on channel %s\n", chan.c_str());
 
   // only dealing with depth. Copied from ddKinectLCM... shouldn't 
   // this be in the Kinect driver or something?
@@ -961,6 +963,4 @@ void IRB140Estimator::handleKinectFrameMsg(const lcm::ReceiveBuffer* rbuf,
     printf("Can't unpack different Kinect data format yet.\n");
   }
   latest_cloud_mutex.unlock();
-  printf("Done here\n");
-
 }
