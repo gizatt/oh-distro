@@ -327,7 +327,7 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
   double DYNAMICS_FLOATING_BASE_WEIGHT = 1 / (2. * dynamics_floating_base_var * dynamics_floating_base_var);
   double DYNAMICS_OTHER_WEIGHT = 1 / (2. * dynamics_other_var * dynamics_other_var);
 
-  double MAX_CONSIDERED_ICP_DISTANCE = 0.05;
+  double MAX_CONSIDERED_ICP_DISTANCE = 0.075;
   double MIN_CONSIDERED_JOINT_DISTANCE = 0.03;
 
   /***********************************************
