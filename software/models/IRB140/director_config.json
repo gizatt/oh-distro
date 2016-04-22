@@ -9,6 +9,18 @@
   },
 
   "fittingConfig": {
+    "engine": {
+      "urdf": "../../control/src/urdf/engine.urdf",
+      "update_channel": "EST_MANIPULAND_STATE_engine.SLDASM",
+      "drakeJointNames": [
+        "base_x",
+        "base_y",
+        "base_z",
+        "base_roll",
+        "base_pitch",
+        "base_yaw"
+      ]
+    },
     "arm": {
       "urdf": "../../control/src/urdf/irb140_chull_robotiq_fourbar_fingers.urdf",
       "update_channel": "EST_MANIPULAND_STATE_IRB140_-_M2004C_Complete_base.SLDASM",
