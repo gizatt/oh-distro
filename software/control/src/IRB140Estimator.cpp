@@ -13,22 +13,21 @@
 
 using namespace std;
 using namespace Eigen;
-using namespace cv;
 
 #define MAX_SCAN_DIST 10.0
 
 template<typename _Tp, int _rows, int _cols, int _options, int _maxRows, int _maxCols>
-void eigen2cv( const Eigen::Matrix<_Tp, _rows, _cols, _options, _maxRows, _maxCols>& src, Mat& dst)
+void eigen2cv( const Eigen::Matrix<_Tp, _rows, _cols, _options, _maxRows, _maxCols>& src, cv::Mat& dst)
 {
     if( !(src.Flags & Eigen::RowMajorBit) )
     {
-        Mat _src(src.cols(), src.rows(), DataType<_Tp>::type,
+        cv::Mat _src(src.cols(), src.rows(), cv::DataType<_Tp>::type,
               (void*)src.data(), src.stride()*sizeof(_Tp));
         transpose(_src, dst);
     }
     else
     {
-        Mat _src(src.rows(), src.cols(), DataType<_Tp>::type,
+        cv::Mat _src(src.rows(), src.cols(), cv::DataType<_Tp>::type,
                  (void*)src.data(), src.stride()*sizeof(_Tp));
         _src.copyTo(dst);
     }
@@ -123,8 +122,8 @@ IRB140Estimator::IRB140Estimator(std::shared_ptr<RigidBodyTree> arm, std::shared
 
   //visualizer = make_shared<Drake::BotVisualizer<Drake::RigidBodySystem::StateVector>>(make_shared<lcm::LCM>(lcm),manipuland);
 
-  namedWindow( "IRB140EstimatorDebug", WINDOW_AUTOSIZE );
-  startWindowThread();
+  cv::namedWindow( "IRB140EstimatorDebug", cv::WINDOW_AUTOSIZE );
+  cv::startWindowThread();
 }
 
 void IRB140Estimator::initBotConfig(const char* filename)
@@ -311,7 +310,7 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
   double joint_known_fb_var = 0.1; // m
   double joint_known_encoder_var = 0.001; // radian
   double joint_limit_var = 0.01; // one-sided, radians
-  double position_constraint_var = 0.001; // one-sided, radians
+  double position_constraint_var = 0.1; // one-sided, radians
 
   double dynamics_floating_base_var = 0.0001; // m per frame
   double dynamics_other_var = 0.1; // rad per frame
@@ -528,21 +527,21 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
       }
     }
 
-    Mat image;
-    Mat image_bg;
+    cv::Mat image;
+    cv::Mat image_bg;
     eigen2cv(observation_sdf, image);
     eigen2cv(depth_image, image_bg);
     double min, max;
-    minMaxIdx(image, &min, &max);
+    cv::minMaxIdx(image, &min, &max);
     if (max > 0)
       image = image / max;
-    minMaxIdx(image_bg, &min, &max);
+    cv::minMaxIdx(image_bg, &min, &max);
     if (max > 0)
       image_bg = image_bg / max;
-    Mat image_disp;
-    addWeighted(image, 1.0, image_bg, 0.0, 0.0, image_disp);
-    resize(image_disp, image_disp, Size(640, 480));
-    imshow("IRB140EstimatorDebug", image_disp);
+    cv::Mat image_disp;
+    cv::addWeighted(image, 1.0, image_bg, 0.0, 0.0, image_disp);
+    cv::resize(image_disp, image_disp, cv::Size(640, 480));
+    cv::imshow("IRB140EstimatorDebug", image_disp);
 
     // calculate projection direction to try to resolve this.
     // following Ganapathi / Thrun 2010, we'll do this by balancing
@@ -753,6 +752,29 @@ void IRB140Estimator::performCompleteICP(Eigen::Isometry3d& kinect2world, Eigen:
   }
 
   /***********************************************
+                POSITION CONSTRAINTS
+    *********************************************/
+  if (POSITION_CONSTRAINT_WEIGHT > 0){
+    now = getUnixTime();
+
+    VectorXd positionConstraints = manipuland->positionConstraints(manipuland_kinematics_cache);
+    MatrixXd positionConstraintsJ = manipuland->positionConstraintsJacobian(manipuland_kinematics_cache, true);
+    for (int i=0; i < positionConstraints.rows(); i++){
+      // push nonzero ones back towards zero
+      // phi_pc_new(i) = J_pc(i, :) * (q - q_old) + phi_pc(i)
+      // min [ phi_pc_new(i)^2 ]
+      // which you can expand out... it's pretty big.      
+      MatrixXd Jpc = POSITION_CONSTRAINT_WEIGHT * positionConstraintsJ.block(i,0,1,nq);      
+      Q.block(0, 0, nq, nq) += POSITION_CONSTRAINT_WEIGHT * Jpc.transpose() * Jpc;
+      f.block(0, 0, nq, 1) += POSITION_CONSTRAINT_WEIGHT * (-1.0 * q_old.transpose() * Jpc.transpose() * Jpc + positionConstraints(i) * Jpc).transpose();      
+      K += 0.5 * POSITION_CONSTRAINT_WEIGHT * positionConstraints(i) * positionConstraints(i);      
+      K += 0.5 * POSITION_CONSTRAINT_WEIGHT * q_old.transpose() * Jpc.transpose() * Jpc * q_old;      
+      K += -1.0 * POSITION_CONSTRAINT_WEIGHT * (positionConstraints(i) * Jpc * q_old)(0);      
+    }
+    //printf("Spent %f in position constraints.\n", getUnixTime() - now);
+  }
+
+  /***********************************************
                        SOLVE
     *********************************************/
   if (K > 0.0){
@@ -857,7 +879,15 @@ void IRB140Estimator::handleLeftHandStateMsg(const lcm::ReceiveBuffer* rbuf,
 
   map<string, int> map = manipuland->computePositionNameToIndexMap();
   for (int i=0; i < msg->num_joints; i++){
-    auto id = map.find(msg->joint_name[i]);
+    auto id = map.end();
+    if (i == 0){
+      id = map.find("left_finger_1_joint_1");
+    } else if (i == 3) {
+      id = map.find("left_finger_2_joint_1");
+    } else if (i == 6) {
+      id = map.find("left_finger_middle_joint_1");
+    }
+
     if (id != map.end()){
       x_manipuland_measured(id->second) = msg->joint_position[i];
       x_manipuland_measured_known[id->second] = true;

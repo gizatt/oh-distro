@@ -4,10 +4,42 @@ manipulator:
 
 manipulands:
   irb140:
-    urdf: "/software/control/src/urdf/irb140_chull_robotiq_actuated_fingers.urdf"
+    #urdf: "/software/control/src/urdf/irb140_chull_robotiq_actuated_fingers.urdf"
+    urdf: "/software/control/src/urdf/irb140_chull_robotiq_fourbar_fingers.urdf"
     q0:
       base_x: -0.17
       base_z: 0.91
+      finger_1_joint_1: 0.339477
+      finger_1_joint_2: 0.778470
+      finger_1_joint_3: 0.383365
+      finger_1_fourbar_0_joint_1: -1.245221
+      finger_1_fourbar_0_joint_2: 1.321350
+      finger_1_fourbar_0_joint_3: -0.933647
+      finger_1_fourbar_3_joint_1: -0.961210
+      finger_1_fourbar_3_joint_2: 1.247278
+      finger_1_fourbar_3_joint_3: -1.011859
+      finger_1_fourbar_linkage_joint_1: 1.471269
+      finger_2_joint_1: 0.400276
+      finger_2_joint_2: 0.623641
+      finger_2_joint_3: 0.371457
+      finger_2_fourbar_0_joint_1: -1.264557
+      finger_2_fourbar_0_joint_2: 1.397440
+      finger_2_fourbar_0_joint_3: -1.093030
+      finger_2_fourbar_3_joint_1: -0.965760
+      finger_2_fourbar_3_joint_2: 1.250744
+      finger_2_fourbar_3_joint_3: -1.009455
+      finger_2_fourbar_linkage_joint_1: 1.471281
+      finger_middle_joint_1: 0.170630
+      finger_middle_joint_2: 0.800355
+      finger_middle_joint_3: 0.484916
+      finger_middle_fourbar_0_joint_1: -1.403969
+      finger_middle_fourbar_0_joint_2: 1.312035
+      finger_middle_fourbar_0_joint_3: -0.913138
+      finger_middle_fourbar_3_joint_1: -0.962583
+      finger_middle_fourbar_3_joint_2: 1.248322
+      finger_middle_fourbar_3_joint_3: -1.116284
+      finger_middle_fourbar_linkage_joint_1: 1.471276
+
   desk:
     urdf: "/software/control/src/desk.urdf"
     q0:
