@@ -117,6 +117,18 @@
         "base_yaw"
       ]
     },
+    "oil_bottle": {
+      "urdf": "../../control/src/urdf/oil_bottle.urdf",
+      "update_channel": "EST_MANIPULAND_STATE_oil_bottle",
+      "drakeJointNames": [
+        "base_x",
+        "base_y",
+        "base_z",
+        "base_roll",
+        "base_pitch",
+        "base_yaw"
+      ]
+    },
     "cardboard_box": {
       "urdf": "../../perception/manipulation_tracking/urdf/cardbox_box_hollow_with_lid.urdf",
       "update_channel": "EST_MANIPULAND_STATE_cardboard_box",
