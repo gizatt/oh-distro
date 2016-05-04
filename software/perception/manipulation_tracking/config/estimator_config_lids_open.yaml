@@ -4,17 +4,17 @@ manipulator:
 
 manipulands:
   irb140:
-    urdf: "/software/control/src/urdf/irb140_chull_robotiq_actuated_fingers.urdf"
+    urdf: "/software/perception/manipulation_tracking/urdf/irb140_chull_robotiq_actuated_fingers.urdf"
     q0:
       base_x: -0.17
       base_z: 0.91
   desk:
-    urdf: "/software/control/src/desk.urdf"
+    urdf: "/software/perception/manipulation_tracking/urdf/desk.urdf"
     q0:
       base_x: 0.67
       base_z: 0.5
   cardboard_box:
-    urdf: "/software/control/src/urdf/cardbox_box_hollow_with_lid.urdf"
+    urdf: "/software/perception/manipulation_tracking/urdf/cardbox_box_hollow_with_lid.urdf"
     q0: 
       base_x: 0.67
       base_z: 0.71
@@ -27,7 +27,7 @@ manipulands:
       #box_wall_py_to_box_lid_py: -3.14
       #box_wall_ny_to_box_lid_ny: -3.14
   jasmine_tea_box:
-    urdf: "/software/control/src/jasmine_tea_box.urdf"
+    urdf: "/software/perception/manipulation_tracking/urdf/jasmine_tea_box.urdf"
     q0: 
       base_x: 0.67
       base_z: 0.71
