@@ -18,3 +18,5 @@ octrees_difference
 # check of lidar self observations (uses drake)
 lidar-passthrough
 mapping2d
+
+manipulation_tracking
