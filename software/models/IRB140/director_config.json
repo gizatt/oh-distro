@@ -10,7 +10,7 @@
 
   "fittingConfig": {
     "engine": {
-      "urdf": "../../control/src/urdf/engine.urdf",
+      "urdf": "../../perception/manipulation_tracking/urdf/engine.urdf",
       "update_channel": "EST_MANIPULAND_STATE_engine.SLDASM",
       "drakeJointNames": [
         "base_x",
@@ -22,7 +22,7 @@
       ]
     },
     "arm": {
-      "urdf": "../../control/src/urdf/irb140_chull_robotiq_fourbar_fingers.urdf",
+      "urdf": "../../perception/manipulation_tracking/urdf/irb140_chull_robotiq_fourbar_fingers.urdf",
       "update_channel": "EST_MANIPULAND_STATE_IRB140_-_M2004C_Complete_base.SLDASM",
       "drakeJointNames": [
         "base_x",
@@ -70,7 +70,7 @@
       ]
     },
     "desk": {
-      "urdf": "../../control/src/desk.urdf",
+      "urdf": "../../perception/manipulation_tracking/urdf/desk.urdf",
       "update_channel": "EST_MANIPULAND_STATE_desk",
       "drakeJointNames": [
         "base_x",
@@ -82,7 +82,7 @@
       ]
     },
     "jasmine_tea_box": {
-      "urdf": "../../control/src/jasmine_tea_box.urdf",
+      "urdf": "../../perception/manipulation_tracking/urdf/jasmine_tea_box.urdf",
       "update_channel": "EST_MANIPULAND_STATE_jasmine_tea_box",
       "drakeJointNames": [
         "base_x",
@@ -94,7 +94,7 @@
       ]
     },
     "cardboard_box": {
-      "urdf": "../../control/src/urdf/cardbox_box_hollow_with_lid.urdf",
+      "urdf": "../../perception/manipulation_tracking/urdf/cardbox_box_hollow_with_lid.urdf",
       "update_channel": "EST_MANIPULAND_STATE_cardboard_box",
       "drakeJointNames": [
         "base_x",
