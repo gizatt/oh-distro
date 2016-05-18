@@ -80,6 +80,18 @@
         "base_pitch",
         "base_yaw"
       ]
+    },    
+    "cube": {
+      "urdf": "../../perception/manipulation_tracking/urdf/cube.urdf",
+      "update_channel": "EST_MANIPULAND_STATE_cube",
+      "drakeJointNames": [
+        "base_x",
+        "base_y",
+        "base_z",
+        "base_roll",
+        "base_pitch",
+        "base_yaw"
+      ]
     },
     "jasmine_tea_box": {
       "urdf": "../../perception/manipulation_tracking/urdf/jasmine_tea_box.urdf",
