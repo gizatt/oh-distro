@@ -25,7 +25,7 @@ group "01.kinect_tools" {
         exec = "$DRC_BASE/software/utils/drc_utils/scripts/irbkinectsimpleconverter.py";
         host = "localhost";
     }
-    cmd "April Tags" {
+    cmd "April Tags Default" {
         exec = "drc-car-tags-irb140 --size=0.1016 --threads=12  --window=true --quiet --asus";
         host = "localhost";
     }
@@ -50,6 +50,10 @@ cmd "robotiq_tcp_node" {
     host = "localhost";
 }
 
+cmd "april_tags_generic" {
+    exec = "drc-apriltags-driver -c $DRC_BASE/software/perception/apriltags_driver/config/gelsight_setup_config.yaml --asus 1";
+    host = "localhost";
+}
 
 script "0.go" {
     start group "00.params";
