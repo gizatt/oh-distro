@@ -92,6 +92,18 @@
         "base_pitch",
         "base_yaw"
       ]
+    },    
+    "gelsight_rig": {
+      "urdf":  "../../perception/manipulation_tracking/urdf/gelsight_rig.urdf",
+      "update_channel": "EST_MANIPULAND_STATE_gelsight_rig",
+      "drakeJointNames": [
+        "base_x",
+        "base_y",
+        "base_z",
+        "base_roll",
+        "base_pitch",
+        "base_yaw"
+      ]
     },
     "jasmine_tea_box": {
       "urdf": "../../perception/manipulation_tracking/urdf/jasmine_tea_box.urdf",
