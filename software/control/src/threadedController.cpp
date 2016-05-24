@@ -218,8 +218,8 @@ public:
 
     std::shared_ptr<DrakeRobotState> state(new DrakeRobotState);
 
-    int nq = solveArgs.pdata->getRobot().num_positions;
-    int nv = solveArgs.pdata->getRobot().num_velocities;
+    int nq = solveArgs.pdata->getRobot().number_of_positions();
+    int nv = solveArgs.pdata->getRobot().number_of_velocities();
     state->q = VectorXd::Zero(nq);
     state->qd = VectorXd::Zero(nv);
 
@@ -398,7 +398,7 @@ void threadLoop(std::shared_ptr<ThreadedControllerOptions> ctrl_opts)
 
 void controllerLoop(InstantaneousQPController *pdata, std::shared_ptr<ThreadedControllerOptions> ctrl_opts)
 {
-  int num_states = pdata->getRobot().num_positions + pdata->getRobot().num_velocities;
+  int num_states = pdata->getRobot().number_of_positions() + pdata->getRobot().number_of_velocities();
   std::vector<string> state_coordinate_names(num_states);
   for (int i=0; i<num_states; i++){
     state_coordinate_names[i] = pdata->getRobot().getStateName(i);

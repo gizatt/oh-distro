@@ -17,7 +17,7 @@ using namespace Eigen;
 
 // Find the joint position indices corresponding to 'name'
 vector<int> getJointPositionVectorIndices(const RigidBodyTree &model, const std::string &name) {
-  shared_ptr<RigidBody> joint_parent_body = model.findJoint(name);
+  RigidBody *joint_parent_body = model.findJoint(name);
   int num_positions = joint_parent_body->getJoint().getNumPositions();
   vector<int> ret(static_cast<size_t>(num_positions));
 
@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
   tspan << 0, 1;
 
   // Default Atlas v5 posture:
-  VectorXd qstar(model.num_positions);
+  VectorXd qstar(model.number_of_positions());
   qstar << 0. ,  0. ,  1.025     ,  0. ,  0. ,  0. ,  0. ,  0. ,  0. ,  0. , 0. ,  0. ,  0.30019662,  1.25      ,  0. , 0.78539819,  1.57099998,  0. ,  0. ,  0.30019662,       -1.25      ,  0. , -0.78539819,  1.57099998,  0. , 0. ,  0. ,  0. , -0.49000001,  1.20500004,       -0.70999998,  0. ,  0. ,  0. , -0.49000001,        1.20500004, -0.70999998,  0.;
 
   // 1 Back Posture Constraint
@@ -277,10 +277,10 @@ int main(int argc, char *argv[])
 //  constraint_array.push_back(&kc_posture_back); // over constrains robot
 
   IKoptions ikoptions(&model);
-  VectorXd q_sol(model.num_positions);
+  VectorXd q_sol(model.number_of_positions());
   int info;
   vector<string> infeasible_constraint;
-  inverseKin(&model, qstar, qstar, constraint_array.size(), constraint_array.data(), q_sol, info, infeasible_constraint, ikoptions);
+  inverseKin(&model, qstar, qstar, constraint_array.size(), constraint_array.data(), ikoptions, &q_sol, &info, &infeasible_constraint);
   printf("INFO = %d\n", info);
   if (info != 1) {
     return 1;
@@ -295,7 +295,7 @@ int main(int argc, char *argv[])
 
   bot_core::robot_state_t robot_state_msg;
   std::vector<string> jointNames;
-  for (int i=0 ; i <model.num_positions ; i++){
+  for (int i=0 ; i <model.number_of_positions() ; i++){
     // std::cout << model.getPositionName(i) << " " << i << "\n";
     jointNames.push_back( model.getPositionName(i) ) ;
   }  

@@ -21,10 +21,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   double t_global = mxGetScalar(prhs[narg]);
   ++narg;
 
-  sizecheck(prhs[narg], plan->robot->num_positions + plan->robot->num_velocities, 1);
+  sizecheck(prhs[narg], plan->robot->number_of_positions() + plan->robot->number_of_velocities(), 1);
   Map<VectorXd> x(mxGetPrSafe(prhs[narg]), mxGetNumberOfElements(prhs[narg]));
-  VectorXd q = x.head(plan->robot->num_positions);
-  VectorXd v = x.tail(plan->robot->num_velocities);
+  VectorXd q = x.head(plan->robot->number_of_positions());
+  VectorXd v = x.tail(plan->robot->number_of_velocities());
   ++narg;
 
   

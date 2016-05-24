@@ -123,11 +123,11 @@ set(gurobi-private_depends)
 set(gurobi-private_external_args ${download_only_args})
 
 set(gurobi_url https://github.com/RobotLocomotion/gurobi.git)
-set(gurobi_revision b95a186b4d988db00ada55bd8efb08c651a83fe7)
+set(gurobi_revision fbbdbbc0152ddb37df209d221aff37448b8ff29f)
 if(APPLE)
-  set(gurobi_distro_file ${source_prefix}/gurobi-private/gurobi5.6.2_mac64.pkg)
+  set(gurobi_distro_file ${source_prefix}/gurobi-private/gurobi6.0.5_mac64.pkg)
 else()
-  set(gurobi_distro_file ${source_prefix}/gurobi-private/gurobi5.6.2_linux64.tar.gz)
+  set(gurobi_distro_file ${source_prefix}/gurobi-private/gurobi6.0.5_linux64.tar.gz)
 endif()
 set(gurobi_environment_args GUROBI_DISTRO=${gurobi_distro_file})
 set(gurobi_depends gurobi-private)
@@ -205,7 +205,7 @@ set(hokuyo_revision 6fc1b804d80838ae314d162929bb0a25a231ca35)
 set(hokuyo_depends libbot)
 
 set(cmake_scripts_url https://github.com/RobotLocomotion/cmake.git)
-set(cmake_scripts_revision 54f5a4c0734015695334970ecedac79e12c3116f)
+set(cmake_scripts_revision abe1a22d0bb767423de4e3bd1123cc2deae1c82a)
 set(cmake_scripts_external_args
   ${download_only_args}
   SOURCE_DIR ${source_prefix}/../drake/drake/cmake
@@ -271,6 +271,16 @@ set(yaml_cpp_external_args
     -DBUILD_SHARED_LIBS:BOOL=ON
   )
 
+set(googletest_url https://github.com/google/googletest.git)
+set(googletest_revision ff07a5de0e81580547f1685e101194ed1a4fcd56)
+set(googletest_external_args
+  CMAKE_CACHE_ARGS
+    ${default_cmake_args}
+    -DBUILD_SHARED_LIBS:BOOL=ON 
+    -DCMAKE_INSTALL_NAME_DIR:STRING=${CMAKE_INSTALL_PREFIX}/lib 
+    -DGTEST_CREATE_SHARED_LIBRARY:BOOL=ON
+    )
+
 set(externals
   Eigen_pod
   ${lcm_proj}
@@ -301,6 +311,7 @@ set(externals
   PointCloudLibraryPlugin
   isam
   yaml_cpp
+  googletest
   )
 
 if(BUILD_PRIVATE_EXTERNALS)

@@ -25,7 +25,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   RigidBodyTree* model = (RigidBodyTree*) getDrakeMexPointer(prhs[narg]);
   ++narg;
 
-  sizecheck(prhs[narg], model->num_positions, 1);
+  sizecheck(prhs[narg], model->number_of_positions(), 1);
   Map<VectorXd> qstar(mxGetPrSafe(prhs[narg]), mxGetNumberOfElements(prhs[narg]));
   ++narg;
 

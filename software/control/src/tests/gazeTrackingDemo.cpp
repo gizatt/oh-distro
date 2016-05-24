@@ -61,7 +61,7 @@ App::App(boost::shared_ptr<lcm::LCM> &lcm_, const CommandLineConfig& cl_cfg_):
 
 // Find the joint position indices corresponding to 'name'
 vector<int> getJointPositionVectorIndices(const RigidBodyTree &model, const std::string &name) {
-  shared_ptr<RigidBody> joint_parent_body = model.findJoint(name);
+  RigidBody * joint_parent_body = model.findJoint(name);
   int num_positions = joint_parent_body->getJoint().getNumPositions();
   vector<int> ret(static_cast<size_t>(num_positions));
 
@@ -268,7 +268,7 @@ int App::getConstraints(Eigen::VectorXd q_star, Eigen::VectorXd &q_sol){
   IKoptions ikoptions(&model_);
   int info;
   vector<string> infeasible_constraint;
-  inverseKin(&model_, q_star, q_star, constraint_array.size(), constraint_array.data(), q_sol, info, infeasible_constraint, ikoptions);
+  inverseKin(&model_, q_star, q_star, constraint_array.size(), constraint_array.data(), ikoptions, &q_sol, &info, &infeasible_constraint);
   printf("INFO = %d\n", info);
   return info;
 }
@@ -303,8 +303,8 @@ void App::solveGazeProblem(){
   lcm_->publish("POSE_BODY_ALT", &goalMsg);
 
   // Solve the IK problem for the neck:
-  VectorXd q_star(robotStateToDrakePosition(rstate_, dofMap_, model_.num_positions));
-  VectorXd q_sol(model_.num_positions);
+  VectorXd q_star(robotStateToDrakePosition(rstate_, dofMap_, model_.number_of_positions()));
+  VectorXd q_sol(model_.number_of_positions());
   int info = getConstraints(q_star, q_sol);
   if (info != 1) {
     std::cout << "Problem not solved\n";
@@ -335,7 +335,7 @@ void App::solveGazeProblem(){
   }else{ // publish neck pitch and yaw joints as orientation. this works ok when robot is facing 1,0,0,0
     // Fish out the two neck joints (in simulation) and send as a command:
     std::vector<string> jointNames;
-    for (int i=0 ; i <model_.num_positions ; i++){
+    for (int i=0 ; i <model_.number_of_positions() ; i++){
       // std::cout << model.getPositionName(i) << " " << i << "\n";
       jointNames.push_back( model_.getPositionName(i) ) ;
     }

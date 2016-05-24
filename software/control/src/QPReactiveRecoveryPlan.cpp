@@ -316,7 +316,7 @@ std::vector<InterceptPlan> QPReactiveRecoveryPlan::getInterceptsWithCoP(const Fo
 
   Polynomial<double> x_foot_poly_plus = QPReactiveRecoveryPlan::bangBangPolynomial(x0, xd0, this->biped.u_max);
   Polynomial<double> x_foot_poly_minus = QPReactiveRecoveryPlan::bangBangPolynomial(x0, xd0, -this->biped.u_max);
-  Vector2d x_foot_int(x_foot_poly_plus.value(t_min_to_xprime), x_foot_poly_minus.value(t_min_to_xprime));
+  Vector2d x_foot_int(x_foot_poly_plus.evaluateUnivariate(t_min_to_xprime), x_foot_poly_minus.evaluateUnivariate(t_min_to_xprime));
 
   if ((x_ic_target >= x_foot_int.minCoeff()) && (x_ic_target <= x_foot_int.maxCoeff())) {
     // std::cerr << "xprime dominates" << std::endl;
@@ -618,7 +618,7 @@ std::unique_ptr<PiecewisePolynomial<double>> QPReactiveRecoveryPlan::swingTrajec
 void QPReactiveRecoveryPlan::setRobot(RigidBodyTree *robot) {
   this->robot = robot;
   this->findFootSoleFrames();
-  this->q_des.resize(robot->num_positions);
+  this->q_des.resize(robot->number_of_positions());
   this->bodyOrFrameNameToIdMap = computeBodyOrFrameNameToIdMap(*robot);
 }
 
@@ -794,9 +794,9 @@ void QPReactiveRecoveryPlan::setupQPInputDefaults(double t_global, drake::lcmt_q
   qp_input.zmp_data.s2 = 0;
   qp_input.zmp_data.s2dot = 0;
 
-  qp_input.whole_body_data.num_positions = this->robot->num_positions;
-  qp_input.whole_body_data.q_des.resize(this->robot->num_positions);
-  for (int i=0; i < this->robot->num_positions; ++i) {
+  qp_input.whole_body_data.num_positions = this->robot->number_of_positions();
+  qp_input.whole_body_data.q_des.resize(this->robot->number_of_positions());
+  for (int i=0; i < this->robot->number_of_positions(); ++i) {
     qp_input.whole_body_data.q_des[i] = this->q_des(i);
   }
   for (int i=0; i < this->robot_property_cache.position_indices.arms[Side::LEFT].size(); i++) {
