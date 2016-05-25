@@ -118,7 +118,7 @@
       ]
     },
     "oil_bottle": {
-      "urdf": "../../control/src/urdf/oil_bottle.urdf",
+      "urdf": "../../perception/manipulation_tracking/urdf/oil_bottle.urdf",
       "update_channel": "EST_MANIPULAND_STATE_oil_bottle",
       "drakeJointNames": [
         "base_x",
