@@ -118,7 +118,7 @@ set(snopt_revision 95d908275156f2665ef3941f08cb89c767480a6e)
 set(snopt_depends)
 
 set(gurobi-private_url ssh://git@github.com/openhumanoids/gurobi-private.git)
-set(gurobi-private_revision cfeea24766ea1a11d5fc6eeff193ab520c3e58d2)
+set(gurobi-private_revision ed5a9ff41356a005964dbb89eae4281431a3f916)
 set(gurobi-private_depends)
 set(gurobi-private_external_args ${download_only_args})
 
