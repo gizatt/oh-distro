@@ -21,6 +21,24 @@
         "base_yaw"
       ]
     },
+    "arm_ati_gelsight": {
+      "urdf": "../../perception/manipulation_tracking/urdf/irb140_chull_ati_gelsight.urdf",
+      "update_channel": "EST_MANIPULAND_STATE_IRB140_ATI_GELSIGHT",
+      "drakeJointNames": [
+        "base_x",
+        "base_y",
+        "base_z",
+        "base_roll",
+        "base_pitch",
+        "base_yaw",
+        "joint1",
+        "joint2",
+        "joint3",
+        "joint4",
+        "joint5",
+        "joint6"
+      ]
+    },
     "arm": {
       "urdf": "../../drake/drake/examples/IRB140/urdf/irb_140_robotiq_ati.urdf",
       "update_channel": "EST_MANIPULAND_STATE_IRB140_-_M2004C_Complete_base.SLDASM",
