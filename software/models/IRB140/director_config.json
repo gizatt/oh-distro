@@ -159,6 +159,18 @@
         "base_yaw"
       ]
     },    
+    "optotrak_cube": {
+      "urdf": "../../perception/manipulation_tracking/urdf/optotrak_cube.urdf",
+      "update_channel": "EST_MANIPULAND_STATE_optotrak_cube",
+      "drakeJointNames": [
+        "base_x",
+        "base_y",
+        "base_z",
+        "base_roll",
+        "base_pitch",
+        "base_yaw"
+      ]
+    },     
     "gelsight_rig": {
       "urdf":  "../../perception/manipulation_tracking/urdf/gelsight_rig.urdf",
       "update_channel": "EST_MANIPULAND_STATE_gelsight_rig",
