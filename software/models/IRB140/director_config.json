@@ -1,11 +1,11 @@
 {
   "urdfConfig": {
-    "default": "../../drake/drake/examples/IRB140/urdf/irb_140_robotiq_ati.urdf",
-    "robotState": "../../drake/drake/examples/IRB140/urdf/irb_140_robotiq_ati.urdf",
+    "default": "../../drake/drake/examples/IRB140/urdf/irb_140_robotiq_ati_invis_hand.urdf",
+    "robotState": "../../drake/drake/examples/IRB140/urdf/irb_140_robotiq_ati_invis_hand.urdf",
     "ik":         "../../drake/drake/examples/IRB140/urdf/irb_140_convhull.urdf",
     "chull":      "../../drake/drake/examples/IRB140/urdf/irb_140_convhull.urdf",
-    "playback":   "../../drake/drake/examples/IRB140/urdf/irb_140_robotiq_ati.urdf",
-    "teleop":     "../../drake/drake/examples/IRB140/urdf/irb_140_robotiq_ati.urdf"
+    "playback":   "../../drake/drake/examples/IRB140/urdf/irb_140_robotiq_ati_invis_hand.urdf",
+    "teleop":     "../../drake/drake/examples/IRB140/urdf/irb_140_robotiq_ati_invis_hand.urdf"
   },
 
   "fittingConfig": {
@@ -22,8 +22,26 @@
       ]
     },
     "arm_ati_gelsight": {
-      "urdf": "../../perception/manipulation_tracking/urdf/irb140_chull_ati_gelsight.urdf",
+      "urdf": "../../drake/drake/examples/IRB140/urdf/irb_140_robotiq_ati_invis_hand.urdf",
       "update_channel": "EST_MANIPULAND_STATE_IRB140_ATI_GELSIGHT",
+      "drakeJointNames": [
+        "base_x",
+        "base_y",
+        "base_z",
+        "base_roll",
+        "base_pitch",
+        "base_yaw",
+        "joint1",
+        "joint2",
+        "joint3",
+        "joint4",
+        "joint5",
+        "joint6"
+      ]
+    },
+    "gt_arm_ati_gelsight": {
+      "urdf": "../../drake/drake/examples/IRB140/urdf/irb_140_robotiq_ati_invis_hand.urdf",
+      "update_channel": "EST_MANIPULAND_STATE_IRB140_ATI_GELSIGHT_GT",
       "drakeJointNames": [
         "base_x",
         "base_y",
@@ -162,6 +180,18 @@
     "optotrak_cube": {
       "urdf": "../../perception/manipulation_tracking/urdf/optotrak_cube.urdf",
       "update_channel": "EST_MANIPULAND_STATE_optotrak_cube",
+      "drakeJointNames": [
+        "base_x",
+        "base_y",
+        "base_z",
+        "base_roll",
+        "base_pitch",
+        "base_yaw"
+      ]
+    },      
+    "gt_optotrak_cube": {
+      "urdf": "../../perception/manipulation_tracking/urdf/optotrak_cube.urdf",
+      "update_channel": "EST_MANIPULAND_STATE_optotrak_cube_GT",
       "drakeJointNames": [
         "base_x",
         "base_y",
