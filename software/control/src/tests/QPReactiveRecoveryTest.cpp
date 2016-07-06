@@ -76,18 +76,18 @@ int testExpTaylor() {
     std::cout << a + c << std::endl;
     return 1;
   }
-  if (std::abs(p.value(0.0) - (a + c)) > 1e-5) {
-    std::cout << p.value(0.0) << std::endl;
+  if (std::abs(p.evaluateUnivariate(0.0) - (a + c)) > 1e-5) {
+    std::cout << p.evaluateUnivariate(0.0) << std::endl;
     std::cout << a + c << std::endl;
     return 1;
   }
-  if (std::abs(p.value(0.5) - expform.value(0.5)) > 1e-5) {
+  if (std::abs(p.evaluateUnivariate(0.5) - expform.value(0.5)) > 1e-5) {
     return 1;
   }
-  if (std::abs(p.value(1.5) - expform.value(1.5)) > 1e-3) {
+  if (std::abs(p.evaluateUnivariate(1.5) - expform.value(1.5)) > 1e-3) {
     return 1;
   }
-  if (std::abs(p.value(5.0) - expform.value(5.0)) > 1) {
+  if (std::abs(p.evaluateUnivariate(5.0) - expform.value(5.0)) > 1) {
     return 1;
   }
   return 0;
@@ -113,8 +113,8 @@ int testExpIntercept() {
   coefs_int << l0 - 0.25*ld0*ld0/u, 0.5*ld0, 0.25*u;
   Polynomial<double> p_int(coefs_int);
   for (std::vector<double>::iterator it = roots.begin(); it != roots.end(); ++it) {
-    double val_exp = p_exp.value(*it);
-    double val_int = p_int.value(*it);
+    double val_exp = p_exp.evaluateUnivariate(*it);
+    double val_int = p_int.evaluateUnivariate(*it);
     if (std::abs(val_exp - val_int) > 1e-3) return 1;
   }
   return 0;

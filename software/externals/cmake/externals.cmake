@@ -89,7 +89,7 @@ set(microstrain_revision 93f4582491f0cfec1c658ed3fb84ae84a13bc6c2)
 set(microstrain_depends common_utils)
 
 set(bullet_url https://github.com/RobotLocomotion/bullet-pod.git)
-set(bullet_revision 24b0a184e177c793a1b2f37f55d3544f2a7c33ae)
+set(bullet_revision f7cfcf6)
 set(bullet_depends)
 
 set(fovis_url https://github.com/fovis/fovis.git)
@@ -118,16 +118,16 @@ set(snopt_revision 95d908275156f2665ef3941f08cb89c767480a6e)
 set(snopt_depends)
 
 set(gurobi-private_url ssh://git@github.com/openhumanoids/gurobi-private.git)
-set(gurobi-private_revision cfeea24766ea1a11d5fc6eeff193ab520c3e58d2)
+set(gurobi-private_revision ed5a9ff41356a005964dbb89eae4281431a3f916)
 set(gurobi-private_depends)
 set(gurobi-private_external_args ${download_only_args})
 
 set(gurobi_url https://github.com/RobotLocomotion/gurobi.git)
-set(gurobi_revision b95a186b4d988db00ada55bd8efb08c651a83fe7)
+set(gurobi_revision fbbdbbc0152ddb37df209d221aff37448b8ff29f)
 if(APPLE)
-  set(gurobi_distro_file ${source_prefix}/gurobi-private/gurobi5.6.2_mac64.pkg)
+  set(gurobi_distro_file ${source_prefix}/gurobi-private/gurobi6.0.5_mac64.pkg)
 else()
-  set(gurobi_distro_file ${source_prefix}/gurobi-private/gurobi5.6.2_linux64.tar.gz)
+  set(gurobi_distro_file ${source_prefix}/gurobi-private/gurobi6.0.5_linux64.tar.gz)
 endif()
 set(gurobi_environment_args GUROBI_DISTRO=${gurobi_distro_file})
 set(gurobi_depends gurobi-private)
@@ -153,7 +153,7 @@ set(swigmake_revision 7e4fcbeb46c5fc7b1efb651b4365ba8b777ef184)
 set(swigmake_depends )
 
 set(iris_url https://github.com/rdeits/iris-distro.git)
-set(iris_revision e3efbc67369e948080a9a1913188874fc31838f5)
+set(iris_revision 1533f20)
 set(iris_depends Eigen_pod)
 set(iris_external_args
   CMAKE_CACHE_ARGS
@@ -205,7 +205,7 @@ set(hokuyo_revision 6fc1b804d80838ae314d162929bb0a25a231ca35)
 set(hokuyo_depends libbot)
 
 set(cmake_scripts_url https://github.com/RobotLocomotion/cmake.git)
-set(cmake_scripts_revision 54f5a4c0734015695334970ecedac79e12c3116f)
+set(cmake_scripts_revision abe1a22d0bb767423de4e3bd1123cc2deae1c82a)
 set(cmake_scripts_external_args
   ${download_only_args}
   SOURCE_DIR ${source_prefix}/../drake/drake/cmake
@@ -272,6 +272,16 @@ set(yaml_cpp_external_args
     -DBUILD_SHARED_LIBS:BOOL=ON
   )
 
+set(googletest_url https://github.com/google/googletest.git)
+set(googletest_revision ff07a5de0e81580547f1685e101194ed1a4fcd56)
+set(googletest_external_args
+  CMAKE_CACHE_ARGS
+    ${default_cmake_args}
+    -DBUILD_SHARED_LIBS:BOOL=ON 
+    -DCMAKE_INSTALL_NAME_DIR:STRING=${CMAKE_INSTALL_PREFIX}/lib 
+    -DGTEST_CREATE_SHARED_LIBRARY:BOOL=ON
+    )
+
 set(externals
   Eigen_pod
   ${lcm_proj}
@@ -302,6 +312,7 @@ set(externals
   PointCloudLibraryPlugin
   isam
   yaml_cpp
+  googletest
   )
 
 if(BUILD_PRIVATE_EXTERNALS)

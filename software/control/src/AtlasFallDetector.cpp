@@ -15,10 +15,10 @@ AtlasFallDetector::AtlasFallDetector(std::shared_ptr<RigidBodyTree> model, bool 
 
   this->model = model;
   std::vector<std::string> state_coordinate_names;
-  int num_states = model->num_positions + model->num_velocities;
+  int num_states = model->number_of_positions() + model->number_of_velocities();
   state_coordinate_names.reserve(num_states);
-  this->robot_state.q.resize(model->num_positions);
-  this->robot_state.qd.resize(model->num_velocities);
+  this->robot_state.q.resize(model->number_of_positions());
+  this->robot_state.qd.resize(model->number_of_velocities());
 
   for (int i=0; i < num_states; ++i) {
     state_coordinate_names.push_back(model->getStateName(i));
@@ -56,9 +56,9 @@ void AtlasFallDetector::resetState() {
 
 void AtlasFallDetector::findFootIDS() {
   for (int i=0; i < this->model->bodies.size(); ++i) {
-    if (this->model->bodies[i]->linkname == "r_foot") {
+    if (this->model->bodies[i]->name() == "r_foot") {
       this->foot_body_ids[RIGHT] = i;
-    } else if (this->model->bodies[i]->linkname == "l_foot") {
+    } else if (this->model->bodies[i]->name() == "l_foot") {
       this->foot_body_ids[LEFT] = i;
     }
   }

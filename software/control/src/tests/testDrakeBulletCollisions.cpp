@@ -101,7 +101,7 @@ void Pass::DoCollisionCheck(){
   
   
   // 2. Extract the indices of the points in collision:
-  VectorXd q = VectorXd::Zero(drake_model_.num_positions, 1);
+  VectorXd q = VectorXd::Zero(drake_model_.number_of_positions(), 1);
   KinematicsCache<double> cache = drake_model_.doKinematics(q);
   vector<size_t> filtered_point_indices = drake_model_.collidingPoints(cache, points, collision_threshold_);
   ///////////////////////////////////////////////////////////////////////////

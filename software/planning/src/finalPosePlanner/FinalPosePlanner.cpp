@@ -80,7 +80,7 @@ int FinalPosePlanner::findFinalPose(RigidBodyTree &robot, const string end_effec
   constraints.resize(constraints.size() + 2);
   constraints_timer.stop();
 
-  final_configuration.resize(robot.num_positions);
+  final_configuration.resize(robot.number_of_positions());
   vector<string> infeasible_constraints;
   VectorXd phi;
   Matrix3Xd normal, xA, xB;
@@ -126,7 +126,7 @@ int FinalPosePlanner::findFinalPose(RigidBodyTree &robot, const string end_effec
 //		COMPUTE CONFIGURATION
     IK_timer.start();
     inverseKin(&robot, modified_configuration, nominal_configuration, constraints.size(),
-        constraints.data(), final_configuration, ik_info, infeasible_constraints, ik_options);
+        constraints.data(), ik_options, &final_configuration, &ik_info, &infeasible_constraints);
     IK_timer.stop();
     vector<string> name;
     VectorXd lb;
@@ -178,7 +178,7 @@ int FinalPosePlanner::findFinalPose(RigidBodyTree &robot, const string end_effec
 int FinalPosePlanner::checkConfiguration(const RigidBodyTree &robot, const VectorXd &configuration,
     const string variable_name)
 {
-  if (configuration.rows() != robot.num_positions)
+  if (configuration.rows() != robot.number_of_positions())
   {
     cout << "ERROR: FinalPosePlanner::" << variable_name << " does not match with DOF number"
         << endl;

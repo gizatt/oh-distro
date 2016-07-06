@@ -12,6 +12,8 @@ import bot_core
 from time import sleep, time
 from datetime import datetime
 
+from bot_core.joint_state_t import joint_state_t
+import bot_core
 
 import pyrobotiqhand.baseSModel as baseSModel
 import pyrobotiqhand.comModbusTcp as comModbusTcp

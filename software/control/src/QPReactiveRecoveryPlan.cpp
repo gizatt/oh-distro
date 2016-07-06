@@ -4,6 +4,8 @@
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/solvers/qpSpline/splineGeneration.h"
 #include "drake/util/lcmUtil.h"
+#include "drake/math/expmap.h"
+#include "drake/math/autodiff.h"
 #include "drake/core/Gradient.h"
 #include "lcmtypes/drc/reactive_recovery_debug_t.hpp"
 extern "C" {
@@ -16,6 +18,7 @@ extern "C" {
 #define DEBUG
 
 using namespace Eigen;
+using namespace drake::math;
 
 Vars vars;
 Params params;
@@ -316,7 +319,7 @@ std::vector<InterceptPlan> QPReactiveRecoveryPlan::getInterceptsWithCoP(const Fo
 
   Polynomial<double> x_foot_poly_plus = QPReactiveRecoveryPlan::bangBangPolynomial(x0, xd0, this->biped.u_max);
   Polynomial<double> x_foot_poly_minus = QPReactiveRecoveryPlan::bangBangPolynomial(x0, xd0, -this->biped.u_max);
-  Vector2d x_foot_int(x_foot_poly_plus.value(t_min_to_xprime), x_foot_poly_minus.value(t_min_to_xprime));
+  Vector2d x_foot_int(x_foot_poly_plus.evaluateUnivariate(t_min_to_xprime), x_foot_poly_minus.evaluateUnivariate(t_min_to_xprime));
 
   if ((x_ic_target >= x_foot_int.minCoeff()) && (x_ic_target <= x_foot_int.maxCoeff())) {
     // std::cerr << "xprime dominates" << std::endl;
@@ -618,7 +621,7 @@ std::unique_ptr<PiecewisePolynomial<double>> QPReactiveRecoveryPlan::swingTrajec
 void QPReactiveRecoveryPlan::setRobot(RigidBodyTree *robot) {
   this->robot = robot;
   this->findFootSoleFrames();
-  this->q_des.resize(robot->num_positions);
+  this->q_des.resize(robot->number_of_positions());
   this->bodyOrFrameNameToIdMap = computeBodyOrFrameNameToIdMap(*robot);
 }
 
@@ -794,7 +797,7 @@ void QPReactiveRecoveryPlan::setupQPInputDefaults(double t_global, drake::lcmt_q
   qp_input.zmp_data.s2 = 0;
   qp_input.zmp_data.s2dot = 0;
 
-  qp_input.whole_body_data.num_positions = this->robot->num_positions;
+  qp_input.whole_body_data.num_positions = this->robot->number_of_positions();
   PiecewisePolynomial<double> qdesPolynomial = PiecewisePolynomial<double>(this->q_des); // create a constant PiecewisePolynomial
 
   drake::lcmt_piecewise_polynomial qtrajSplineMsg;

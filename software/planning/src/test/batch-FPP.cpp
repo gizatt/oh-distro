@@ -166,12 +166,12 @@ int main(int argc, char* argv[])
   FinalPosePlanner fpp;
 
   VectorXd start_configuration;
-  start_configuration.resize(robot.num_positions);
+  start_configuration.resize(robot.number_of_positions());
   start_configuration << 0, 0, 1.0250, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.3002, 1.2500, 0, 0.7854, 1.5710, 0, 0, 0.3002, -1.2500, 0, -0.7854, 1.5710, 0, 0, 0, 0, -0.4900, 1.2050, -0.7100, 0, 0, 0, -0.4900, 1.2050, -0.7100, 0;
 
   KinematicsCache<double> cache = robot.doKinematics(start_configuration);
   IKoptions ik_options(&robot);
-  VectorXd cost(robot.num_positions, 1);
+  VectorXd cost(robot.number_of_positions(), 1);
   MatrixXd Q;
   cost << 10, 10, 10, 10, 10, 10, 20, 19, 18, 3, 2, 1, 3.50000000000000, 3, 2.50000000000000, 2, 1.50000000000000, 1, 0.500000000000000, 3.50000000000000, 3, 2.50000000000000, 2, 1.50000000000000, 1, 0.500000000000000, 6, 5, 4, 3, 2, 1, 6, 5, 4, 3, 2, 1;
   ik_options.setQ(cost.asDiagonal());
@@ -245,7 +245,7 @@ int main(int argc, char* argv[])
   constraints.push_back(&quasi_static_constraint);
 
   VectorXd nominal_configuration, final_configuration;
-  nominal_configuration.resize(robot.num_positions);
+  nominal_configuration.resize(robot.number_of_positions());
   nominal_configuration << 0, 0, 1.0250, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.3002, 1.2500, 0, 0.7854, 1.5710, 0, 0, 0.3002, -1.2500, 0, -0.7854, 1.5710, 0, 0, 0, 0, -0.4900, 1.2050, -0.7100, 0, 0, 0, -0.4900, 1.2050, -0.7100, 0;
 
 //  INITIALIZE OUTPUT FILE

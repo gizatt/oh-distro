@@ -121,7 +121,7 @@ void CandidateRobotPosePublisher::publish(boost::shared_ptr<lcm::LCM> lcm,
   pose_msg.twist.angular_velocity.x = 0;
   pose_msg.twist.angular_velocity.y = 0;
   pose_msg.twist.angular_velocity.z = 0;
-  pose_msg.num_joints = robot.num_positions;
+  pose_msg.num_joints = robot.number_of_positions();
   vector<string> joint_names;
   joint_names.push_back("base_x");
   joint_names.push_back("base_y");
@@ -165,9 +165,9 @@ void CandidateRobotPosePublisher::publish(boost::shared_ptr<lcm::LCM> lcm,
   pose_msg.joint_name = joint_names;
   vector<float> joint_positions(pose.data(), pose.data() + pose.size());
   pose_msg.joint_position = joint_positions;
-  vector<float> joint_velocities(robot.num_positions, 0);
+  vector<float> joint_velocities(robot.number_of_velocities(), 0);
   pose_msg.joint_velocity = joint_velocities;
-  vector<float> joint_efforts(robot.num_positions, 0);
+  vector<float> joint_efforts(robot.number_of_velocities(), 0);
   pose_msg.joint_effort = joint_efforts;
   pose_msg.force_torque.l_foot_force_z = 0;
   pose_msg.force_torque.l_foot_torque_x = 0;
