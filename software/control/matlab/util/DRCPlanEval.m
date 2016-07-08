@@ -196,15 +196,36 @@ classdef DRCPlanEval < bipedControllers.BipedPlanEval
 
       % Use the previously commanded state to override the first (or only) knot point in the new trajectory. This is necessary to prevent the robot from suddenly drooping or jerking at the start of a plan, since the initial state of the plan may not match the robot's current desired state. 
       if ~isempty(obj.qp_input)
+        % calculate commanded state given previous plan
+        ind = find(obj.qp_input.whole_body_data.spline.breaks > obj.t, 1, 'first');
+        if (isempty(ind))
+          polynomial_matrices_now = obj.qp_input.whole_body_data.spline.polynomial_matrices(end);
+          t_now = 0;
+        elseif (ind == 1)
+          polynomial_matrices_now = obj.qp_input.whole_body_data.spline.polynomial_matrices(ind);
+          t_now = 0; %obj.qp_input.whole_body_data.spline.breaks(1);
+        else
+          polynomial_matrices_now = obj.qp_input.whole_body_data.spline.polynomial_matrices(ind-1);
+          t_now = obj.t - obj.qp_input.whole_body_data.spline.breaks(ind-1);
+        end
+        q_des = zeros(obj.robot.getNumPositions(), 1);
+        for i=1:obj.robot.getNumPositions()
+          this_polynomial = polynomial_matrices_now.polynomials(i, 1);
+          for k=1:this_polynomial.num_coefficients
+            q_des(i) = q_des(i) + this_polynomial.coefficients(k)*((t_now)^(k-1));
+          end
+        end
+
         if isnumeric(new_plan.qtraj)
-          new_plan.qtraj(1:end) = obj.qp_input.whole_body_data.q_des(1:end);
+          new_plan.qtraj(1:end) = q_des(1:end);
         else
           if isa(new_plan.qtraj, 'PPTrajectory')
             % The qtraj is a piecewise polynomial, so we'll just add a constant offset to its first segment to ensure that its initial qdes is the same as our previously published qdes.
             [ts, coefs, l, k, d] = unmkpp(new_plan.qtraj.pp);
             coefs = reshape(coefs, [d, l, k]);
             q0 = fasteval(new_plan.qtraj, ts(1));
-            delta_q = obj.qp_input.whole_body_data.q_des - q0;
+
+            delta_q = q_des(1:end); - q0;
             coefs(1:end,1,end) = coefs(1:end,1,end) + delta_q(1:end);
             if k > 1
               new_plan.qtraj = PPTrajectory(pchipDeriv(ts, [coefs(:,:,end), fasteval(new_plan.qtraj, ts(end))], coefs(:,:,end-1)));
