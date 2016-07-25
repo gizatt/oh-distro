@@ -9,6 +9,30 @@
   },
 
   "fittingConfig": {
+    "optotrak": {
+      "urdf": "../../perception/manipulation_tracking/urdf/optotrak.urdf",
+      "update_channel": "EST_MANIPULAND_STATE_optotrak",
+      "drakeJointNames": [
+        "base_x",
+        "base_y",
+        "base_z",
+        "base_roll",
+        "base_pitch",
+        "base_yaw"
+      ]
+    },
+    "xtion": {
+      "urdf": "../../perception/manipulation_tracking/urdf/xtion.urdf",
+      "update_channel": "EST_MANIPULAND_STATE_xtion",
+      "drakeJointNames": [
+        "base_x",
+        "base_y",
+        "base_z",
+        "base_roll",
+        "base_pitch",
+        "base_yaw"
+      ]
+    },
     "engine": {
       "urdf": "../../perception/manipulation_tracking/urdf/engine.urdf",
       "update_channel": "EST_MANIPULAND_STATE_engine.SLDASM",

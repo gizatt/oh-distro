@@ -20,3 +20,4 @@ lidar-passthrough
 mapping2d
 
 manipulation_tracking
+apriltags_driver
