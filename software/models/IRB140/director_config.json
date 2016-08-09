@@ -276,6 +276,30 @@
         "box_wall_py_to_box_lid_py",
         "box_wall_ny_to_box_lid_ny"
       ]
+    },
+    "screwdriver": {
+      "urdf": "../../perception/manipulation_tracking/urdf/screwdriver_torx/screwdriver_torx.urdf",
+      "update_channel": "EST_MANIPULAND_STATE_screwdriver",
+      "drakeJointNames": [
+        "base_x",
+        "base_y",
+        "base_z",
+        "base_roll",
+        "base_pitch",
+        "base_yaw"
+      ]
+    },
+    "screwdriver_GT": {
+      "urdf": "../../perception/manipulation_tracking/urdf/screwdriver_torx/screwdriver_torx.urdf",
+      "update_channel": "EST_MANIPULAND_STATE_screwdriver_GT",
+      "drakeJointNames": [
+        "base_x",
+        "base_y",
+        "base_z",
+        "base_roll",
+        "base_pitch",
+        "base_yaw"
+      ]
     }
   },
 
