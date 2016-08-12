@@ -14,6 +14,8 @@ jrf-client.out
 *_text_log_*
 fort.15
 .idea
+*.autosave
+snopt.out
 
 #######################
 # Ignores for lcmtypes
