@@ -1,5 +1,9 @@
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../cmake")
+
 find_package(PkgConfig REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(GLib2 REQUIRED COMPONENTS gthread)
+
 set(GLUT_LIBRARIES -lglut)
 
 pkg_check_modules(BOT2_VIS bot2-vis)
@@ -16,7 +20,8 @@ add_library(multisense-renderer SHARED
 
 target_link_libraries(multisense-renderer
     ${OPENGL_LIBRARIES}
-    ${GTK2_LDFLAGS})
+    ${GTK2_LDFLAGS}
+    GLib2::glib GLib2::gthread)
 
 pods_use_pkg_config_packages(multisense-renderer
     bot2-vis opencv
@@ -28,7 +33,7 @@ pods_install_headers(multisense_renderer.h
 pods_install_libraries(multisense-renderer)
 
 pods_install_pkg_config_file(multisense-renderer
-    LIBS -lmultisense-renderer
+    LIBS -lmultisense-renderer -lgthread-2.0
     REQUIRES bot2-vis bot2-frames 
     VERSION 0.0.1)
 

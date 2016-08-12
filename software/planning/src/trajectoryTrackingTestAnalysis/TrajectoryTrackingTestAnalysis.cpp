@@ -3,7 +3,7 @@
 #include "lcm_utils/lcm_utils.hpp"
 #include "lcmtypes/drc/plan_status_t.hpp"
 #include "lcmtypes/drc/robot_plan_t.hpp"
-#include "drake/thirdParty/tinyxml2/tinyxml2.h"
+#include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 
 using namespace std;
 using namespace lcm;

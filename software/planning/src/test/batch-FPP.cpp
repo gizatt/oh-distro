@@ -1,6 +1,7 @@
 #include <boost/program_options.hpp>
 
-#include "drake/thirdParty/tinyxml2/tinyxml2.h"
+#include "drake/util/drakeGeometryUtil.h"
+#include "drake/thirdParty/zlib/tinyxml2/tinyxml2.h"
 
 #include "finalPosePlanner/FinalPosePlanner.hpp"
 #include "fppUtil/fppUtil.hpp"
@@ -8,6 +9,7 @@
 using namespace std;
 using namespace Eigen;
 using namespace tinyxml2;
+using namespace drake::math;
 namespace po = boost::program_options;
 
 template<typename T>
@@ -235,8 +237,8 @@ int main(int argc, char* argv[])
 //	QUASI-STATIC CONSTRAINT
   Matrix3Xd left_contact_points;
   Matrix3Xd right_contact_points;
-  robot.getTerrainContactPoints(*(robot.bodies[left_foot_id]), left_contact_points);
-  robot.getTerrainContactPoints(*(robot.bodies[right_foot_id]), right_contact_points);
+  robot.getTerrainContactPoints(*(robot.bodies[left_foot_id]), &left_contact_points);
+  robot.getTerrainContactPoints(*(robot.bodies[right_foot_id]), &right_contact_points);
   QuasiStaticConstraint quasi_static_constraint(&robot);
   quasi_static_constraint.setShrinkFactor(0.5);
   quasi_static_constraint.setActive(true);

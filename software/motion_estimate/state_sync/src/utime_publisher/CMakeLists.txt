@@ -6,5 +6,6 @@ project(motion_estimate)
 set(REQUIRED_PACKAGES bot2-core lcm drc-utils)
 
 add_executable(drc-utime-publisher utime_publisher.cpp)
+target_link_libraries(drc-utime-publisher pthread)
 pods_use_pkg_config_packages(drc-utime-publisher ${REQUIRED_PACKAGES})
 pods_install_executables(drc-utime-publisher)

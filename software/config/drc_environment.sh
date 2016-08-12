@@ -187,3 +187,6 @@ setup_valkyrie_computers
 alias cddrc='cd $DRC_BASE/software'
 alias rundrc='bot-procman-sheriff -l $DRC_BASE/software/config/atlas/robot.pmd'
 alias runval='bot-procman-sheriff -l $DRC_BASE/software/config/val/robot.pmd'
+
+# Know where to find the models
+export ROS_PACKAGE_PATH=$DRC_BASE/software/models:$ROS_PACKAGE_PATH

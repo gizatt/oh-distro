@@ -21,6 +21,7 @@
 #include "drake/systems/controllers/InstantaneousQPController.h"
 
 using namespace Eigen;
+using namespace drake::math;
 
 namespace {
 
@@ -401,7 +402,7 @@ void threadLoop(std::shared_ptr<ThreadedControllerOptions> ctrl_opts) {
   done = false;
 
   // original gravity vector
-  Eigen::Matrix<double, TWIST_SIZE, 1> a_grav;
+  Eigen::Matrix<double, drake::kTwistSize, 1> a_grav;
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
   while (!done) {
@@ -534,7 +535,7 @@ void threadLoop(std::shared_ptr<ThreadedControllerOptions> ctrl_opts) {
 
     auto & actuatorVec = pdata->getRobot().actuators;
     for(auto & actuator: actuatorVec){
-      std::string actuatorName = actuator.body->getJoint().getName();
+      std::string actuatorName = actuator.body_->getJoint().getName();
       std::cout << actuatorName << std::endl;
       input_joint_names.push_back(actuatorName);
     }

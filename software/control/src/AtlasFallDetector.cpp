@@ -56,9 +56,9 @@ void AtlasFallDetector::resetState() {
 
 void AtlasFallDetector::findFootIDS() {
   for (int i=0; i < this->model->bodies.size(); ++i) {
-    if (this->model->bodies[i]->name() == "r_foot") {
+    if (this->model->bodies[i]->get_name() == "r_foot") {
       this->foot_body_ids[RIGHT] = i;
-    } else if (this->model->bodies[i]->name() == "l_foot") {
+    } else if (this->model->bodies[i]->get_name() == "l_foot") {
       this->foot_body_ids[LEFT] = i;
     }
   }
@@ -158,7 +158,7 @@ double AtlasFallDetector::getSupportFootHeight() {
   std::map<FootID, double> sole_zs;
   for (std::map<FootID, int>::iterator foot = this->foot_body_ids.begin(); foot != foot_body_ids.end(); ++foot) {
     Matrix3Xd contact_pts;
-    this->model->getTerrainContactPoints(*this->model->bodies[foot->second], contact_pts);
+    this->model->getTerrainContactPoints(*this->model->bodies[foot->second], &contact_pts);
     Matrix3Xd contact_pts_in_world = this->model->transformPoints(kinematics_cache, contact_pts, foot->second, 0);
     sole_zs[foot->first] = contact_pts_in_world.row(2).mean();
   }
@@ -178,7 +178,7 @@ Matrix3Xd AtlasFallDetector::getVirtualSupportPolygon (bool shrink_noncontact_fo
 
   for (std::map<FootID, int>::iterator foot = this->foot_body_ids.begin(); foot != foot_body_ids.end(); ++foot) {
     Matrix3Xd contact_pts;
-    this->model->getTerrainContactPoints(*this->model->bodies[foot->second], contact_pts);
+    this->model->getTerrainContactPoints(*this->model->bodies[foot->second], &contact_pts);
     Matrix3Xd contact_pts_in_world = this->model->transformPoints(kinematics_cache, contact_pts, foot->second, 0);
     if (shrink_noncontact_foot) {
       if (!this->foot_contact.at(foot->first)) {

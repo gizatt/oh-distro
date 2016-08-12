@@ -1,8 +1,10 @@
 #include "fppUtil.hpp"
 #include "lcmtypes/bot_core/robot_state_t.hpp"
+#include "drake/math/quaternion.h"
 
 using namespace std;
 using namespace Eigen;
+using namespace drake::math;
 
 void draw3dLine(bot_lcmgl_t *lcmgl, const Vector3d start, const Vector3d end)
 {

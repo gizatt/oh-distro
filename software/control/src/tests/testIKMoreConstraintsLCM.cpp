@@ -21,8 +21,9 @@ vector<int> getJointPositionVectorIndices(const RigidBodyTree &model, const std:
   int num_positions = joint_parent_body->getJoint().getNumPositions();
   vector<int> ret(static_cast<size_t>(num_positions));
 
-  // fill with sequentially increasing values, starting at joint_parent_body->position_num_start:
-  iota(ret.begin(), ret.end(), joint_parent_body->position_num_start);
+  // fill with sequentially increasing values, starting at joint_parent_body's
+  // starting position index
+  iota(ret.begin(), ret.end(), joint_parent_body->get_position_start_index());
   return ret;
 }
 
@@ -196,7 +197,7 @@ int main(int argc, char *argv[])
   kc_posture_larm.setJointLimits(7, larm_idx.data(), larm_lb, larm_ub);
 
   // 4 Left Foot Position and Orientation Constraints
-  int l_foot = model.findLinkId("l_foot");
+  int l_foot = model.FindBodyIndex("l_foot");
   Vector3d l_foot_pt = Vector3d::Zero();
   Vector3d lfoot_pos0;
   lfoot_pos0(0) = 0;
@@ -215,7 +216,7 @@ int main(int argc, char *argv[])
   WorldQuatConstraint kc_lfoot_quat(&model, l_foot, quat_des, tol, tspan);
 
   // 5 Right Foot Position and Orientation Constraints
-  int r_foot = model.findLinkId("r_foot");
+  int r_foot = model.FindBodyIndex("r_foot");
   Vector3d r_foot_pt = Vector3d::Zero();
   Vector3d rfoot_pos0;
   rfoot_pos0(0) = 0;
@@ -233,7 +234,7 @@ int main(int argc, char *argv[])
 
 
   // 6 Right Position Constraints (actual reaching constraint)
-  int r_hand = model.findLinkId("r_hand");
+  int r_hand = model.FindBodyIndex("r_hand");
   Vector3d r_hand_pt = Vector3d::Zero();
   Vector3d rhand_pos0;
   //Vector3d rhand_pos0 = model.forwardKin(r_hand_pt, r_hand, 0, 0);

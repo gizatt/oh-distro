@@ -4,6 +4,7 @@
 
 using namespace std;
 using namespace Eigen;
+using namespace drake::math;
 
 RobotStateDriver::RobotStateDriver(vector<string> state_coordinate_names) {
   m_num_joints = 0;

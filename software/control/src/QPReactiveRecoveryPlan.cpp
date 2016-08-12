@@ -105,8 +105,8 @@ Polynomial<double> QPReactiveRecoveryPlan::bangBangPolynomial(double x0, double 
 }
 
 std::vector<double> realRoots(Polynomial<double> p) {
-  VectorXd coefs = p.getCoefficients();
-  double order = p.getDegree();
+  VectorXd coefs = p.GetCoefficients();
+  double order = p.GetDegree();
   std::vector<double> roots;
   if (order == 1) {
     // c0 + c1*t = 0;
@@ -319,7 +319,7 @@ std::vector<InterceptPlan> QPReactiveRecoveryPlan::getInterceptsWithCoP(const Fo
 
   Polynomial<double> x_foot_poly_plus = QPReactiveRecoveryPlan::bangBangPolynomial(x0, xd0, this->biped.u_max);
   Polynomial<double> x_foot_poly_minus = QPReactiveRecoveryPlan::bangBangPolynomial(x0, xd0, -this->biped.u_max);
-  Vector2d x_foot_int(x_foot_poly_plus.evaluateUnivariate(t_min_to_xprime), x_foot_poly_minus.evaluateUnivariate(t_min_to_xprime));
+  Vector2d x_foot_int(x_foot_poly_plus.EvaluateUnivariate(t_min_to_xprime), x_foot_poly_minus.EvaluateUnivariate(t_min_to_xprime));
 
   if ((x_ic_target >= x_foot_int.minCoeff()) && (x_ic_target <= x_foot_int.maxCoeff())) {
     // std::cerr << "xprime dominates" << std::endl;
@@ -541,14 +541,14 @@ std::unique_ptr<PiecewisePolynomial<double>> QPReactiveRecoveryPlan::straightToG
   Quaterniond quat;
   xs.block(0, 0, 3, 1) = state.pose.translation();
   quat = Quaterniond(state.pose.rotation());
-  auto w = quat2expmap(Drake::initializeAutoDiff(Vector4d(quat.w(), quat.x(), quat.y(), quat.z())));
+  auto w = quat2expmap(drake::initializeAutoDiff(Vector4d(quat.w(), quat.x(), quat.y(), quat.z())));
   xs.block(3, 0, 3, 1) = autoDiffToGradientMatrix(w);
 
   xs.block(0, 2, 3, 1) = intercept_plan.pose_next.translation();
   quat = Quaterniond(intercept_plan.pose_next.rotation());
   xs.block(3, 2, 3, 1) = quat2expmap(Vector4d(quat.w(), quat.x(), quat.y(), quat.z()));
 
-  auto w_unwrap = closestExpmap(Drake::initializeAutoDiff(xs.block<3, 1>(3, 0)), Drake::initializeAutoDiff(xs.block<3, 1>(3, 2)));
+  auto w_unwrap = closestExpmap(drake::initializeAutoDiff(xs.block<3, 1>(3, 0)), drake::initializeAutoDiff(xs.block<3, 1>(3, 2)));
   xs.block(3, 2, 3, 1) = autoDiffToValueMatrix(w_unwrap);
   xd0.tail<3>() = autoDiffToGradientMatrix(w_unwrap) * xd0.tail<3>();
 
@@ -580,14 +580,14 @@ std::unique_ptr<PiecewisePolynomial<double>> QPReactiveRecoveryPlan::upOverAndDo
   Quaterniond quat;
   xs.block(0, 0, 3, 1) = state.pose.translation();
   quat = Quaterniond(state.pose.rotation());
-  auto w = quat2expmap(Drake::initializeAutoDiff(Vector4d(quat.w(), quat.x(), quat.y(), quat.z())));
+  auto w = quat2expmap(drake::initializeAutoDiff(Vector4d(quat.w(), quat.x(), quat.y(), quat.z())));
   xs.block(3, 0, 3, 1) = autoDiffToGradientMatrix(w);
 
   xs.block(0, 3, 3, 1) = intercept_plan.pose_next.translation();
   quat = Quaterniond(intercept_plan.pose_next.rotation());
   xs.block(3, 3, 3, 1) = quat2expmap(Vector4d(quat.w(), quat.x(), quat.y(), quat.z()));
 
-  auto w_unwrap = closestExpmap(Drake::initializeAutoDiff(xs.block<3, 1>(3, 0)), Drake::initializeAutoDiff(xs.block<3,1>(3, 3)));
+  auto w_unwrap = closestExpmap(drake::initializeAutoDiff(xs.block<3, 1>(3, 0)), drake::initializeAutoDiff(xs.block<3,1>(3, 3)));
   xs.block(3, 3, 3, 1) = autoDiffToValueMatrix(w_unwrap);
   xd0.tail<3>() = autoDiffToGradientMatrix(w_unwrap) * xd0.tail<3>();
 
@@ -650,7 +650,7 @@ void QPReactiveRecoveryPlan::findFootSoleFrames() {
   has_frame[RIGHT] = false;
   has_frame[LEFT] = false;
   for (int i=0; i < robot->frames.size(); ++i) {
-    if (this->robot->frames[i]->name == "r_foot_sole") {
+    if (this->robot->frames[i]->get_name() == "r_foot_sole") {
       has_frame[RIGHT] = true;
       // frame_ind0 = -frameID - 2
       // i = -frameID - 2;
@@ -658,16 +658,16 @@ void QPReactiveRecoveryPlan::findFootSoleFrames() {
       this->foot_frame_ids[RIGHT] = -i - 2;
       Isometry3d Tframe;
       int body_id = this->robot->parseBodyOrFrameID( this->foot_frame_ids[RIGHT], &Tframe);
-      if (!Tframe.isApprox(this->robot->frames[i]->transform_to_body)) {
+      if (!Tframe.isApprox(this->robot->frames[i]->get_transform_to_body())) {
         throw std::runtime_error("somehow I got the frame ID/index logic wrong");
       }
       this->foot_body_ids[RIGHT] = body_id;
-    } else if (this->robot->frames[i]->name == "l_foot_sole") {
+    } else if (this->robot->frames[i]->get_name() == "l_foot_sole") {
       has_frame[LEFT] = true;
       this->foot_frame_ids[LEFT] = -i - 2;
       Isometry3d Tframe;
       int body_id = this->robot->parseBodyOrFrameID(this->foot_frame_ids[LEFT], &Tframe);
-      if (!Tframe.isApprox(this->robot->frames[i]->transform_to_body)) {
+      if (!Tframe.isApprox(this->robot->frames[i]->get_transform_to_body())) {
         throw std::runtime_error("somehow I got the frame ID/index logic wrong");
       }
       this->foot_body_ids[LEFT] = body_id;
@@ -863,7 +863,7 @@ void QPReactiveRecoveryPlan::encodeSupportData(const int body_id, const FootStat
   support_data.timestamp = 0;
   support_data.body_name = this->robot->getBodyOrFrameName(body_id);
   support_data.contact_pts.resize(3);
-  Matrix3Xd all_contacts = this->robot->bodies[body_id]->contact_pts;
+  Matrix3Xd all_contacts = this->robot->bodies[body_id]->get_contact_points();
   support_data.num_contact_pts = all_contacts.cols();
   for (int i=0; i < 3; i++) {
     support_data.contact_pts[i].resize(all_contacts.cols());
@@ -1068,7 +1068,7 @@ FootStateMap QPReactiveRecoveryPlan::getFootStates(const KinematicsCache<double>
     auto twist = robot->relativeTwist(cache, 0, frame_id, frame_id);
     auto quat = rotmat2quat(foot_states[*id].pose.linear());
     foot_states[*id].velocity.topRows<3>() = foot_states[*id].pose.linear() * twist.bottomRows<3>();
-    Matrix<double, QUAT_SIZE, SPACE_DIMENSION> omega_to_quatdot;
+    Matrix<double, drake::kQuaternionSize, drake::kSpaceDimension> omega_to_quatdot;
     angularvel2quatdotMatrix(quat, omega_to_quatdot, static_cast<Gradient<decltype(omega_to_quatdot), Dynamic>::type*>(nullptr));
     foot_states[*id].velocity.bottomRows<4>() = omega_to_quatdot * foot_states[*id].pose.linear() * twist.topRows<3>();
     int body_id = this->robot->parseBodyOrFrameID(this->foot_frame_ids[*id]);

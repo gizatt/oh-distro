@@ -2,8 +2,11 @@
 
 #include "fppUtil/fppUtil.hpp"
 
+#include "drake/util/drakeGeometryUtil.h"
+
 using namespace std;
 using namespace Eigen;
+using namespace drake::math;
 
 FinalPosePlanner::FinalPosePlanner()
 {

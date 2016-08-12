@@ -45,6 +45,8 @@ using namespace Eigen;
 //using namespace collision;
 using namespace boost::assign; // bring 'operator+()' into scope
 
+using namespace drake::math;
+
 #define DO_TIMING_PROFILE FALSE
 
 // all ranges shorter than this are assumed to be with the head

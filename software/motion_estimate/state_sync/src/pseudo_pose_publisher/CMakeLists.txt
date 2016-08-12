@@ -7,5 +7,6 @@ set(REQUIRED_PACKAGES bot2-core lcm drc-utils)
 set(EXE_NAME pseudo-pose-publisher)
 
 add_executable(${EXE_NAME} pseudo_pose_publisher.cpp)
+target_link_libraries(${EXE_NAME} pthread)
 pods_use_pkg_config_packages(${EXE_NAME} ${REQUIRED_PACKAGES})
 pods_install_executables(${EXE_NAME})

@@ -1,5 +1,5 @@
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/util/Polynomial.h"
+#include "drake/common/polynomial.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "ExponentialForm.hpp"
 #include "drake/systems/controllers/QPCommon.h"

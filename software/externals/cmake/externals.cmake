@@ -282,6 +282,17 @@ set(googletest_external_args
     -DGTEST_CREATE_SHARED_LIBRARY:BOOL=ON
     )
 
+set(spdlog_url https://github.com/gabime/spdlog.git)
+set(spdlog_revision 43a4048b92ef5b7eff6dc637a621c7da3a41d194)
+set(spdlog_external_args
+  CMAKE_CACHE_ARGS
+    ${default_cmake_args}
+    -DBUILD_SHARED_LIBS:BOOL=ON 
+    -DCMAKE_INSTALL_NAME_DIR:STRING=${CMAKE_INSTALL_PREFIX}/lib 
+    -DGTEST_CREATE_SHARED_LIBRARY:BOOL=ON
+    )
+
+
 set(externals
   Eigen_pod
   ${lcm_proj}
@@ -313,6 +324,7 @@ set(externals
   isam
   yaml_cpp
   googletest
+  spdlog
   )
 
 if(BUILD_PRIVATE_EXTERNALS)
