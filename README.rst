@@ -296,7 +296,7 @@ ROS is not required per se. If you would like to use this distribution in conjun
 
 ::
 
-    sudo apt-get install ros-indigo-desktop-full ros-indigo-moveit-full ros-indigo-ros-control ros-indigo-ackermann-msgs
+    sudo apt-get install ros-indigo-desktop-full ros-indigo-moveit-full ros-indigo-ros-control
 
 Compile catkin workspace:
 
