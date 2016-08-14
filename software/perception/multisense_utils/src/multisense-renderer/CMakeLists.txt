@@ -2,7 +2,6 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../cmake")
 
 find_package(PkgConfig REQUIRED)
 find_package(OpenGL REQUIRED)
-find_package(GLib2 REQUIRED COMPONENTS gthread)
 
 set(GLUT_LIBRARIES -lglut)
 
@@ -20,8 +19,7 @@ add_library(multisense-renderer SHARED
 
 target_link_libraries(multisense-renderer
     ${OPENGL_LIBRARIES}
-    ${GTK2_LDFLAGS}
-    GLib2::glib GLib2::gthread)
+    ${GTK2_LDFLAGS})
 
 pods_use_pkg_config_packages(multisense-renderer
     bot2-vis opencv
