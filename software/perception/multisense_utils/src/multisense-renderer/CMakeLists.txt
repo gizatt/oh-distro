@@ -1,8 +1,5 @@
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../cmake")
-
 find_package(PkgConfig REQUIRED)
 find_package(OpenGL REQUIRED)
-
 set(GLUT_LIBRARIES -lglut)
 
 pkg_check_modules(BOT2_VIS bot2-vis)
