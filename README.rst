@@ -152,13 +152,27 @@ LCM (v1.3.1) is a required dependency which must be installed from source. It ca
     make
     sudo make install
 
+GCC 4.9 Dependency
+--------------
+Drake and its associated libraries require GCC 4.9. On Ubuntu 15.10 and above, the system
+compiler is sufficient. On Ubuntu 14.04, use:
+
+::
+
+    sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+    sudo apt-get update
+    sudo apt-get upgrade
+    sudo apt-get install g++-4.9-multilib gfortran-4.9
+
+If you use ccache, remember to update your ccache symlinks!
+
 CMake 3.5 Dependency
 --------------
 
 Drake and its associated libraries require CMake 3.5. On Ubuntu 16.04, this requirement will
 already be met by the above package list. 
 
-On Ubuntu 14.04, download and install the tools manually:
+On Ubuntu 14.04, download and install the tools manually, following something like:
 
 ::
 
