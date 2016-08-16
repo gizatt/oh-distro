@@ -152,7 +152,23 @@ LCM (v1.3.1) is a required dependency which must be installed from source. It ca
     make
     sudo make install
 
+CMake 3.5 Dependency
+--------------
 
+Drake and its associated libraries require CMake 3.5. On Ubuntu 16.04, this requirement will
+already be met by the above package list. 
+
+On Ubuntu 14.04, download and install the tools manually:
+
+::
+
+    mkdir -p ~/tools
+    cd ~/tools
+    wget https://cmake.org/files/v3.5/cmake-3.5.2-Linux-x86_64.tar.gz
+    tar zxvf cmake-3.5.2-Linux-x86_64.tar.gz
+    rm cmake-3.5.2-Linux-x86_64.tar.gz
+    cd cmake-3.5.2-Linux-x86_64/bin
+    echo "export PATH=`pwd`:$PATH" >> ~/.bashrc
 
 Install Matlab
 --------------
