@@ -2,12 +2,13 @@
 
 if(NOT USE_SYSTEM_LCM)
   set(lcm_proj lcm)
-  set(lcm_url https://github.com/lcm-proj/lcm/releases/download/v1.3.0/lcm-1.3.0.zip)
-  set(lcm_download_hash 5d46a902fe04608809af3dc526909f9b)
-  set(lcm_depends)
+  set(lcm_url https://github.com/lcm-proj/lcm.git)
+  set(lcm_revision 2cb8e16008ad9e03ed25ed57965a99343eab8dea)
   set(lcm_external_args
-    CONFIGURE_COMMAND ${source_prefix}/lcm/configure --prefix=${CMAKE_INSTALL_PREFIX}
-    BUILD_IN_SOURCE 1
+   CMAKE_CACHE_ARGS
+     ${default_cmake_args}
+     -DBUILD_SHARED_LIBS:BOOL=ON # Because LCM has no ABI decoration
+     -DCMAKE_BUILD_TYPE:STRING=Release # See above
     )
 endif()
 
@@ -15,8 +16,8 @@ set(bot_core_lcmtypes_url https://github.com/iamwolf/bot_core_lcmtypes.git)
 set(bot_core_lcmtypes_revision c29cd6076d13ca2a3ecc23ffcbe28a0a1ab46314)
 set(bot_core_lcmtypes_depends ${lcm_proj})
 
-set(libbot_url https://github.com/openhumanoids/libbot.git)
-set(libbot_revision a238668b8e2e7ef985517716bdd4ee96e774a445)
+set(libbot_url https://github.com/gizatt/libbot.git)
+set(libbot_revision 8a2a7ac5b8cbe0938f0bd35f8ae19925592e1c14)
 set(libbot_depends bot_core_lcmtypes ${lcm_proj})
 
 set(Eigen_pod_url https://github.com/RobotLocomotion/eigen-pod.git)
