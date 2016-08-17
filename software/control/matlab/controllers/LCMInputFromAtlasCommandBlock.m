@@ -106,6 +106,7 @@ classdef LCMInputFromAtlasCommandBlock < MIMODrakeSystem
           obj.lcmtype_neck_constructor = constructors_neck(i);
         end
       end
+      'here'
       
       % And the initial standing controller, until the planner comes
       % online
@@ -193,6 +194,7 @@ classdef LCMInputFromAtlasCommandBlock < MIMODrakeSystem
       data_neck = obj.lcmonitor_neck.getMessage();
       if (~isempty(data_neck))
        neck_cmd = obj.lcmtype_neck_constructor.newInstance(data_neck);
+       % todo: actually check against names here
        obj.neck_desired_angle.setData(neck_cmd.joint_position(1));
       end
       

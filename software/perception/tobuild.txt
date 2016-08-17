@@ -22,3 +22,6 @@ mapping2d
 
 #Apply masking filter, textureless area removal and speckles removal
 multisense_image_filter
+
+manipulation_tracking
+apriltags_driver

@@ -1,0 +1,95 @@
+group "00.params" {
+    cmd "pserver" {
+        exec = "bot-param-server $DRC_BASE/software/config/irb140/irb140.cfg";
+        host = "localhost";
+    }
+}
+
+group "01.kinect_tools" {
+    cmd "kinect_openni_read" {
+        exec = "kinect-openni-lcm -z -j -r 10";
+        host = "localhost";
+    }
+    cmd "kinect_image_images_translate" {
+        exec = "$DRC_BASE/software/utils/drc_utils/scripts/irbkinectsimpleconverter.py";
+        host = "localhost";
+    }
+    cmd "kinect_rgb_translate" {
+        exec = "kinect-rgb-tool";
+        host = "localhost";
+    }
+}
+
+group "02.director" {
+    cmd "the_director" {
+        exec = "director --director_config $DRC_BASE/software/models/IRB140/director_config.json --config_file $DRC_BASE/software/config/irb140/irb140.cfg";
+        host = "localhost";
+    }
+}
+
+group "03.manipulation_trackers" {
+    cmd "optotrak tracker" {
+        exec = "runManipulationTracker $DRC_BASE/software/perception/manipulation_tracking/config/estimator_config_irb140_gelsight_gt_optotrak.yaml";
+        host = "localhost";
+    }
+    cmd "apriltags tracker" {
+        exec = "runManipulationTracker $DRC_BASE/software/perception/manipulation_tracking/config/estimator_config_apriltags_only.yaml";
+        host = "localhost";
+    }
+    cmd "gelsight tracker" {
+        exec = "runManipulationTracker $DRC_BASE/software/perception/manipulation_tracking/config/estimator_config_irb140_gelsight.yaml";
+        host = "localhost";
+    }
+    cmd "error calculator" {
+        exec = "runErrorCalculator $DRC_BASE/software/perception/manipulation_tracking/config/errorcalculator_config.yaml";
+        host = "localhost";
+    }
+}
+
+group "04.lcm_converter" {
+    cmd "IRB140DRCLCM_convertor" {
+        exec = "python $(HOME)/ABB-IRB140/robotsuite-lcm-util/IRB140DRCLCM_convertor.py";
+        host = "localhost";
+    }
+}
+
+group "05.april_tags" {
+    cmd "april_tags_generic" {
+        exec = "drc-apriltags-driver -c $DRC_BASE/software/perception/apriltags_driver/config/gelsight_setup_config.yaml --asus 1";
+        host = "localhost";
+    }
+}
+
+group "06.gelsight_drivers" {
+    cmd "gelsight_depth_publisher" {
+        exec = "/home/locomotion/gelsight_se/build/gelsight_depth_driver 0 1";
+        host = "localhost";
+    }
+}
+
+group "60.robotiq" {
+    cmd "60.robotiq_tcp_node" {
+        exec = "robotiq_tcp_node LEFT 192.168.1.199";
+        host = "localhost";
+    }
+}
+
+group "99.annoying_message" {
+    cmd "annoying_message" {
+        exec = "notify-send \"bot-procman script: 'Also start MATLAB Gelsight translator and Windows machine translator'\"";
+        host = "localhost";
+    }
+}
+
+script "0.go" {
+    start group "00.params";
+    wait ms 1000;
+    start group "01.kinect_tools";
+    start group "02.director";
+    start group "03.manipulation_trackers";
+    start group "04.lcm_converter";
+    start group "05.april_tags";
+    start group "06.gelsight_drivers";
+    start group "60.robotiq";
+    start group "99.annoying_message";
+}

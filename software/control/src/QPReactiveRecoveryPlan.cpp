@@ -798,12 +798,12 @@ void QPReactiveRecoveryPlan::setupQPInputDefaults(double t_global, drake::lcmt_q
   qp_input.zmp_data.s2dot = 0;
 
   qp_input.whole_body_data.num_positions = this->robot->number_of_positions();
+
   PiecewisePolynomial<double> qdesPolynomial = PiecewisePolynomial<double>(this->q_des); // create a constant PiecewisePolynomial
 
   drake::lcmt_piecewise_polynomial qtrajSplineMsg;
   encodePiecewisePolynomial(qdesPolynomial, qtrajSplineMsg);
   qp_input.whole_body_data.spline = qtrajSplineMsg;
-
 
   for (int i=0; i < this->robot_property_cache.position_indices.arms[Side::LEFT].size(); i++) {
     qp_input.whole_body_data.constrained_dofs.push_back(this->robot_property_cache.position_indices.arms[Side::LEFT][i] + 1);

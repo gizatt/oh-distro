@@ -32,6 +32,8 @@ pods_install_python_script(sim-publish-recovery-trigger-on python/publish_recove
 pods_install_python_script(sim-publish-threedof-force python/publish_threedof_force.py)
 pods_install_python_script(drc-rolling-log-splicer python/rolling_logs.py)
 pods_install_python_script(drc-rewrite-log-timestamps python/lcm_log_timestamps.py)
+pods_install_python_script(drc-publish-irb140-estimator-capture-pointcloud python/publish_irb140_estimator_capture_pointcloud.py)
+pods_install_python_script(drc-publish-transform python/publish_transform.py)
 
 # Misc Tools added from ipab/tools
 pods_install_python_script(drc-send-com-height python/send_com_height.py)

@@ -1,0 +1,101 @@
+robots:
+  cube:
+    urdf: "/software/perception/manipulation_tracking/urdf/cube.urdf"
+    q0:
+      base_x: 0.0
+      base_z: 0.0
+  gelsight_rig:
+    urdf: "/software/perception/manipulation_tracking/urdf/gelsight_rig_no_collision.urdf"
+    q0:
+      base_x: 0.0
+      base_z: 0.0
+
+
+dynamics:
+  dynamics_floating_base_var: 0.1 # m per frame
+  dynamics_other_var: 0.1 # rad per frame
+  verbose: False
+
+
+costs:
+  - type: "AttachedApriltagCost"
+    verbose: false
+    timeout_time: 0.2
+    localization_var: 0.01
+    transform_var: .inf
+    attached_manipuland: "cube"
+    apriltags:
+      - id: 1
+        body: "cube"
+        pos: [0.05, 0.0, 0.0]
+        rot: [180.0, -90.0, -90.0]
+        channel: APRIL_TAG_0001_TO_CAMERA_LEFT
+      - id: 3
+        body: "cube"
+        pos: [-0.05, 0.0, 0.0]
+        rot: [0.0, 90.0, -90.0]
+        channel: APRIL_TAG_0003_TO_CAMERA_LEFT
+      - id: 2
+        body: "cube"
+        pos: [0.0, 0.05, 0.0]
+        rot: [90.0, 0.0, 180.0]
+        channel: APRIL_TAG_0002_TO_CAMERA_LEFT
+      - id: 4
+        body: "cube"
+        pos: [0.0, -0.05, 0.0]
+        rot: [-90.0, 0.0, 0.0]
+        channel: APRIL_TAG_0004_TO_CAMERA_LEFT
+      - id: 5
+        body: "cube"
+        pos: [0.0, 0.0, 0.05]
+        rot: [180.0, 0.0, -90.0]
+        channel: APRIL_TAG_0005_TO_CAMERA_LEFT
+      - id: 6
+        body: "cube"
+        pos: [0.0, 0.0, -0.05]
+        rot: [0.0, 0.0, 90.0]
+        channel: APRIL_TAG_0006_TO_CAMERA_LEFT
+
+  - type: "AttachedApriltagCost"
+    verbose: false
+    timeout_time: 0.2
+    localization_var: 0.01
+    transform_var: .Inf
+    attached_manipuland: "gelsight_rig"
+    apriltags:
+      - id: 0
+        body: "apriltag_mount"
+        #pos: [-0.0125, -0.095, -0.065]
+        #rot: [180.0, 90.0, -90.0]
+        pos: [0., 0.01, -0.005]
+        rot: [0., 0., 0.]
+        channel: APRIL_TAG_0000_TO_CAMERA_LEFT
+
+  - type: "GelsightCost"
+    max_considered_corresp_distance: 0.1
+    gelsight_depth_var: .Inf #0.001
+    gelsight_freespace_var: .Inf #0.001
+    num_sample_points: 100
+    timeout_time: 0.2
+    verbose: False
+    surface:
+      body: "gelsight_box"
+      lower_left:  [-0.0125, 0.0125, 0.0]
+      lower_right: [-0.0125,  -0.0125, 0.0]
+      upper_left:  [ 0.0125, 0.0125, 0.0]
+      upper_right:  [ 0.0125,  -0.0125, 0.0]
+
+  - type: "KinectFrameCost"
+    config: "/software/config/irb140/irb140.cfg"
+    icp_var: .inf
+    free_space_var: .inf
+    max_considered_icp_distance: 0.05
+    min_considered_joint_distance: 0.02
+    verbose: False
+    bounds:
+      xMin: -1.0
+      xMax: 1.0
+      yMin: -1.0
+      yMax: 1.0
+      zMin: -1.0
+      zMax: 1.0

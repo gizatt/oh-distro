@@ -293,7 +293,6 @@ set(spdlog_external_args
     -DGTEST_CREATE_SHARED_LIBRARY:BOOL=ON
     )
 
-
 set(externals
   Eigen_pod
   ${lcm_proj}

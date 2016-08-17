@@ -1,0 +1,65 @@
+group "00.params" {
+    cmd "pserver" {
+        exec = "bot-param-server $DRC_BASE/software/config/irb140/irb140.cfg";
+        host = "localhost";
+    }
+}
+
+group "alt00.params" {
+    cmd "pserver" {
+        exec = "bot-param-server $DRC_BASE/software/config/subsystems/sensor_rig/sensor_rig.cfg";
+        host = "localhost";
+    }
+}
+
+group "01.kinect_tools" {
+    cmd "kinect_openni_read" {
+        exec = "kinect-openni-lcm -z -j -r 10";
+        host = "localhost";
+    }
+    cmd "kinect_rgb_translate" {
+        exec = "kinect-rgb-tool";
+        host = "localhost";
+    }
+    cmd "kinect_image_images_translate" {
+        exec = "$DRC_BASE/software/utils/drc_utils/scripts/irbkinectsimpleconverter.py";
+        host = "localhost";
+    }
+    cmd "April Tags Default" {
+        exec = "drc-car-tags-irb140 --size=0.1016 --threads=12  --window=true --quiet --asus";
+        host = "localhost";
+    }
+}
+
+group "02.director" {
+    cmd "the_director" {
+        exec = "director --director_config $DRC_BASE/software/models/IRB140/director_config.json --config_file $DRC_BASE/software/config/irb140/irb140.cfg";
+        host = "localhost";
+    }
+}
+
+group "LCM converter" {
+    cmd "IRB140DRCLCM_convertor" {
+        exec = "python /home/locomotion/ABB-IRB140/robotsuite-lcm-util/IRB140DRCLCM_convertor.py";
+        host = "localhost";
+    }
+}
+
+cmd "robotiq_tcp_node" {
+    exec = "robotiq_tcp_node LEFT 192.168.1.199";
+    host = "localhost";
+}
+
+cmd "april_tags_generic" {
+    exec = "drc-apriltags-driver -c $DRC_BASE/software/perception/apriltags_driver/config/gelsight_setup_config.yaml --asus 1";
+    host = "localhost";
+}
+
+script "0.go" {
+    start group "00.params";
+    wait ms 1000;
+    start group "01.kinect_tools";
+    start cmd "robotiq_tcp_node";
+    start group "02.director";
+    start group "LCM converter";
+}

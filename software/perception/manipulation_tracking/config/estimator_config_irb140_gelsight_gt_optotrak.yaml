@@ -1,0 +1,205 @@
+robots:
+  optotrak_cube:
+    urdf: "/software/perception/manipulation_tracking/urdf/optotrak_cube.urdf"
+    q0:
+      base_x: 0.6
+      base_z: 1.0
+  irb140:
+    urdf: "/software/perception/manipulation_tracking/urdf/irb140_chull_ati_gelsight.urdf"
+    q0:
+      base_x: -0.17
+      base_z: 0.91
+  optotrak:
+    urdf: "/software/perception/manipulation_tracking/urdf/optotrak.urdf"
+    q0:
+      base_x: 0
+      base_y: 0
+      base_z: 0
+  xtion:
+    urdf: "/software/perception/manipulation_tracking/urdf/xtion.urdf"
+    q0:
+      base_x: 1.0
+      base_y: -0.5
+      base_z: 2.0
+
+timestep: 0.01
+
+publish:
+  irb140_state:
+    robot_name: "IRB140_ATI_GELSIGHT"
+    type: "state"
+    channel: "EST_MANIPULAND_STATE_IRB140_ATI_GELSIGHT_GT"
+  optotrak_cube_state:
+    robot_name: "optotrak_cube"
+    type: "state"
+    channel: "EST_MANIPULAND_STATE_optotrak_cube_GT"
+  #xtion_state:
+  #  robot_name: "xtion"
+  #  type: "state"
+  #  channel: "EST_MANIPULAND_STATE_xtion"
+  #xtion_offset:    
+  #  robot_name: "xtion"
+  #  type: "transform"
+  #  channel: "GT_CAMERA_OFFSET"
+  optotrak_state:
+    robot_name: "optotrak"
+    type: "state"
+    channel: "EST_MANIPULAND_STATE_optotrak"
+
+
+post_transform:
+  source_robot: "IRB140_ATI_GELSIGHT"
+  dest_frame: "robot_base"
+
+dynamics:
+  dynamics_floating_base_var: 0.01 # m per frame
+  dynamics_other_var: 0.1 # rad per frame
+  verbose: False
+
+costs:
+  - type: "OptotrakMarkerCost"
+    verbose: false
+    verbose_lcmgl: true
+    timeout_time: 0.2
+    localization_var: 0.01
+    transform_var: 0.1
+    world_frame: true
+    attached_manipuland: "xtion"
+    markers:
+      - ids: [32, 33, 34]
+        body: "xtion"
+        pos: [0.09, 0.0, 0.02]
+        normal: [0.0, -0.030, 1.0] # xtion camera isn't perfectly aligned with the camera housing???
+      - ids: [35, 36, 37]
+        body: "xtion"
+        pos: [-0.052, 0.0, 0.02]
+        normal: [0.0, -0.030, 1.0] #TODO(gizatt): automate the calibration of these.
+
+  - type: "OptotrakMarkerCost"
+    verbose: false
+    verbose_lcmgl: true
+    timeout_time: 0.2
+    localization_var: 0.001
+    transform_var: .inf
+    world_frame: true
+    attached_manipuland: "optotrak_cube"
+    markers:
+# all units mm
+# x width: 132.4
+# y width: 126.1
+# z widht: 126.1
+# no markers on +x, -x surfaces, which are plates screwed onto box
+#   12.4mm in from +x, -x surfaces
+#   9.4mm in from the other direction
+# origin is at the middle, so all markers are at x = +/- 53.8mm
+#                                     +/- 63.05mm in the normal direction
+#                                 and +/- 53.65mm in other dir
+      - ids: [1]
+        body: "optotrak_cube"
+        pos: [-0.05380, -0.05365,  0.06305]
+      - ids: [2]
+        body: "optotrak_cube"
+        pos: [ 0.05380, -0.05365,  0.06305]
+      - ids: [3]
+        body: "optotrak_cube"
+        pos: [ 0.05380,  0.05365,  0.06305]
+      - ids: [4]
+        body: "optotrak_cube"
+        pos: [-0.05380,  0.05365,  0.06305]
+      - ids: [5]
+        body: "optotrak_cube"
+        pos: [-0.05380,  0.06305,  0.05365]
+      - ids: [6]
+        body: "optotrak_cube"
+        pos: [ 0.05380,  0.06305,  0.05365]
+      - ids: [7]
+        body: "optotrak_cube"
+        pos: [ 0.05380,  0.06305, -0.05365]
+      - ids: [8]
+        body: "optotrak_cube"
+        pos: [-0.05380,  0.06305, -0.05365]
+      - ids: [9]
+        body: "optotrak_cube"
+        pos: [-0.05380,  0.05365, -0.06305]
+      - ids: [10]
+        body: "optotrak_cube"
+        pos: [ 0.05380,  0.05365, -0.06305]
+      - ids: [11]
+        body: "optotrak_cube"
+        pos: [ 0.05380, -0.05365, -0.06305]
+      - ids: [12]
+        body: "optotrak_cube"
+        pos: [-0.05380, -0.05365, -0.06305]
+      - ids: [13]
+        body: "optotrak_cube"
+        pos: [-0.05380, -0.06305, -0.05365]
+      - ids: [14]
+        body: "optotrak_cube"
+        pos: [ 0.05380, -0.06305, -0.05365]
+      - ids: [15]
+        body: "optotrak_cube"
+        pos: [ 0.05380, -0.06305,  0.05365]
+      - ids: [16]
+        body: "optotrak_cube"
+        pos: [-0.05380, -0.06305,  0.05365]
+
+  - type: "OptotrakMarkerCost"
+    verbose: false
+    verbose_lcmgl: true
+    timeout_time: 0.2
+    localization_var: 0.001
+    transform_var: .inf
+    attached_manipuland: "IRB140_ATI_GELSIGHT"
+    markers:
+      - ids: [17]
+        body: "link_1"
+        pos: [6.396297e-02, -2.511530e-01, 2.142800e-01]
+      - ids: [18]
+        body: "link_1"
+        pos: [6.581854e-02, -2.312759e-01, 2.137990e-01]
+      - ids: [19]
+        body: "link_1"
+        pos: [8.239935e-02, -2.428834e-01, 2.143577e-01]
+      - ids: [20]
+        body: "link_3"
+        pos: [1.206068e-02, -4.525537e-03, 9.600543e-02]
+      - ids: [21]
+        body: "link_3"
+        pos: [-8.394403e-03, -4.102342e-03, 9.559292e-02]
+      - ids: [22]
+        body: "link_3"
+        pos: [2.081893e-03, 1.301942e-02, 9.577409e-02]
+      - ids: [23]
+        body: "link_4"
+        pos: [1.720351e-01, -4.269576e-02, 6.853713e-02]
+      - ids: [24]
+        body: "link_4"
+        pos: [1.519473e-01, -4.232051e-02, 6.818615e-02]
+      - ids: [25]
+        body: "link_4"
+        pos: [1.623122e-01, -2.493538e-02, 6.846220e-02]
+      - ids: [26]
+        body: "link_4"
+        pos: [1.714975e-01, -6.428956e-03, 6.999270e-02]
+      - ids: [27]
+        body: "link_4"
+        pos: [1.509259e-01, -5.417801e-03, 6.989076e-02]
+      - ids: [28]
+        body: "link_4"
+        pos: [1.621192e-01, 1.180479e-02, 6.994824e-02]
+      - ids: [29]
+        body: "link_4"
+        pos: [4.209599e-02, 9.174603e-03, 7.244508e-02]
+      - ids: [30]
+        body: "link_4"
+        pos: [3.943231e-02, -1.069512e-02, 7.293605e-02]
+      - ids: [31]
+        body: "link_4"
+        pos: [2.332111e-02, 1.576340e-03, 7.367985e-02]
+
+  - type: "RobotStateCost"
+    joint_known_fb_var: .inf # m
+    joint_known_encoder_var: 0.001 # radian
+    transcribe_floating_base_vars: False
+    verbose: False
+    state_channelname: "EST_ROBOT_STATE"
