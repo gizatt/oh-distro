@@ -1,4 +1,6 @@
 {
+  "modelName" : "irb140",
+  
   "urdfConfig": {
     "default": "../../drake/drake/examples/IRB140/urdf/irb_140_robotiq_ati_invis_hand.urdf",
     "robotState": "../../drake/drake/examples/IRB140/urdf/irb_140_robotiq_ati_invis_hand.urdf",
