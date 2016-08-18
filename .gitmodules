@@ -25,3 +25,6 @@
 [submodule "software/cv_utils"]
 	path = software/cv_utils
 	url = git@github.com:openhumanoids/cv_utils.git
+[submodule "catkin_ws/src/exotica-dev"]
+	path = catkin_ws/src/exotica-dev
+	url = https://github.com/OpenHumanoids/exotica-dev.git
