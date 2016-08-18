@@ -17,7 +17,7 @@ set(bot_core_lcmtypes_revision c29cd6076d13ca2a3ecc23ffcbe28a0a1ab46314)
 set(bot_core_lcmtypes_depends ${lcm_proj})
 
 set(libbot_url https://github.com/gizatt/libbot.git)
-set(libbot_revision 8a2a7ac5b8cbe0938f0bd35f8ae19925592e1c14)
+set(libbot_revision c9b93654b19ce23152591255815414f293bc97a3)
 set(libbot_depends bot_core_lcmtypes ${lcm_proj})
 
 set(Eigen_pod_url https://github.com/RobotLocomotion/eigen-pod.git)
