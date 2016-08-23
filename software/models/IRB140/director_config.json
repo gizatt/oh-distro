@@ -290,6 +290,18 @@
         "base_pitch",
         "base_yaw"
       ]
+    },
+    "tiny_bolt": {
+      "urdf": "../../perception/manipulation_tracking/urdf/tiny_bolt.urdf",
+      "update_channel": "EST_MANIPULAND_STATE_bolt",
+      "drakeJointNames": [
+        "base_x",
+        "base_y",
+        "base_z",
+        "base_roll",
+        "base_pitch",
+        "base_yaw"
+      ]
     }
   },
 
