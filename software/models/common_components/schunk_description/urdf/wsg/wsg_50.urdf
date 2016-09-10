@@ -22,7 +22,7 @@
     </collision>
   </link>
   <joint name="wsg_50_finger_left_joint" type="prismatic">
-    <origin rpy="0 0 0" xyz="0 0 0.0789"/>
+    <origin rpy="3.1415 3.1415 0" xyz="0 -0.0719 0"/>
     <parent link="wsg_50_palm_link"/>
     <child link="wsg_50_finger_left_link"/>
     <axis xyz="0 1 0"/>
@@ -46,7 +46,7 @@
     </collision>
   </link>
   <joint name="wsg_50_finger_right_joint" type="prismatic">
-    <origin rpy="-0 0 0" xyz="0 0 0.0789"/>
+    <origin rpy="3.1415 0 0" xyz="0 -0.0719 0.0"/>
     <parent link="wsg_50_palm_link"/>
     <child link="wsg_50_finger_right_link"/>
     <axis xyz="0 -1 0"/>

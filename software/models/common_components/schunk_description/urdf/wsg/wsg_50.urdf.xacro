@@ -11,19 +11,19 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://schunk_description/meshes/wsg_50/palm.stl" />
+        <mesh filename="package://schunk_description/meshes/wsg_50/palm.stl"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://schunk_description/meshes/wsg_50/palm.stl" />
+        <mesh filename="package://schunk_description/meshes/wsg_50/palm.stl"/>
       </geometry>
     </collision>
   </link>
 
 
   <joint name="${name}_finger_left_joint" type="prismatic" >
-    <origin xyz="0 0 0.0789" rpy="0 0 0"/>
+    <origin xyz="0 -0.0719 0" rpy="3.1415 3.1415 0"/>
     <parent link="${name}_palm_link" />
     <child link="${name}_finger_left_link" />
     <axis xyz="0 1 0" />
@@ -38,19 +38,19 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://schunk_description/meshes/wsg_50/finger.stl" />
+        <mesh filename="package://schunk_description/meshes/wsg_50/finger.stl"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://schunk_description/meshes/wsg_50/finger.stl" />
+        <mesh filename="package://schunk_description/meshes/wsg_50/finger.stl"/>
       </geometry>
     </collision>
   </link>
 
 
   <joint name="${name}_finger_right_joint" type="prismatic" >
-    <origin xyz="0 0 0.0789" rpy="-0 0 0"/>
+    <origin xyz="0 -0.0719 0.0" rpy="3.1415 0 0"/>
     <parent link="${name}_palm_link" />
     <child link="${name}_finger_right_link" />
     <axis xyz="0 -1 0" />
@@ -66,12 +66,12 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://schunk_description/meshes/wsg_50/finger.stl" />
+        <mesh filename="package://schunk_description/meshes/wsg_50/finger.stl"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://schunk_description/meshes/wsg_50/finger.stl" />
+        <mesh filename="package://schunk_description/meshes/wsg_50/finger.stl"/>
       </geometry>
     </collision>
   </link>
