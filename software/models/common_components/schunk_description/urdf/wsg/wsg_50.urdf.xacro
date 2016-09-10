@@ -1,0 +1,98 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="wsg_50">
+
+  <xacro:property name="name" value="wsg_50" />
+
+  <link name="${name}_palm_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1"/>
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="package://schunk_description/meshes/wsg_50/palm.stl" />
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="package://schunk_description/meshes/wsg_50/palm.stl" />
+      </geometry>
+    </collision>
+  </link>
+
+
+  <joint name="${name}_finger_left_joint" type="prismatic" >
+    <origin xyz="0 0 0.0789" rpy="0 0 0"/>
+    <parent link="${name}_palm_link" />
+    <child link="${name}_finger_left_link" />
+    <axis xyz="0 1 0" />
+    <limit effort="10" lower="-0.001" upper="0.061" velocity="2.0"/>
+  </joint>
+
+  <link name="${name}_finger_left_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1"/>
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="package://schunk_description/meshes/wsg_50/finger.stl" />
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="package://schunk_description/meshes/wsg_50/finger.stl" />
+      </geometry>
+    </collision>
+  </link>
+
+
+  <joint name="${name}_finger_right_joint" type="prismatic" >
+    <origin xyz="0 0 0.0789" rpy="-0 0 0"/>
+    <parent link="${name}_palm_link" />
+    <child link="${name}_finger_right_link" />
+    <axis xyz="0 -1 0" />
+    <mimic joint="${name}_finger_left_joint" multiplier="1" offset="0"/>
+    <limit effort="10" lower="-0.001" upper="0.061" velocity="2.0"/>
+  </joint>
+
+  <link name="${name}_finger_right_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1"/>
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="package://schunk_description/meshes/wsg_50/finger.stl" />
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="package://schunk_description/meshes/wsg_50/finger.stl" />
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- extensions -->
+  <transmission name="${name}_finger_left_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="${name}_finger_left_joint"/>
+    <actuator name="${name}_finger_left_motor">
+      <hardwareInterface>EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  
+  <transmission name="${name}_finger_right_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="${name}_finger_right_joint"/>
+    <actuator name="${name}_finger_right_motor">
+      <hardwareInterface>EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+</robot>
