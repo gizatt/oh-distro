@@ -154,7 +154,7 @@ set(swigmake_revision 7e4fcbeb46c5fc7b1efb651b4365ba8b777ef184)
 set(swigmake_depends )
 
 set(iris_url https://github.com/rdeits/iris-distro.git)
-set(iris_revision 1533f20)
+set(iris_revision f6cdf5a4f789)
 set(iris_depends Eigen_pod)
 set(iris_external_args
   CMAKE_CACHE_ARGS
