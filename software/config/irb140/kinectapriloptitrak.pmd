@@ -48,7 +48,7 @@ group "03.manipulation_trackers" {
 
 group "04.lcm_converter" {
     cmd "IRB140DRCLCM_convertor" {
-        exec = "python $(HOME)/ABB-IRB140/robotsuite-lcm-util/IRB140DRCLCM_convertor.py";
+        exec = "python $DRC_BASE/../ABB-IRB140/robotsuite-lcm-util/IRB140DRCLCM_convertor.py";
         host = "localhost";
     }
 }
@@ -62,7 +62,7 @@ group "05.april_tags" {
 
 group "06.gelsight_drivers" {
     cmd "gelsight_depth_publisher" {
-        exec = "/home/locomotion/gelsight_se/build/gelsight_depth_driver 0 1";
+        exec = "$DRC_BASE/../gelsight_se/build/gelsight_depth_driver 0 -v 1";
         host = "localhost";
     }
 }
