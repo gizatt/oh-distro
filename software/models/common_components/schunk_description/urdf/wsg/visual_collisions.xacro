@@ -42,10 +42,41 @@
   </xacro:macro>
 
 
+
+  <xacro:macro name="palm_pretty_visual" params="">
+    <visual>
+      <geometry>
+        <mesh filename="package://schunk_description/meshes/wsg_50/palm.stl"/>
+      </geometry>
+    </visual>
+  </xacro:macro>
+  <xacro:macro name="palm_pretty_collision" params="">
+    <collision>
+      <geometry>
+        <mesh filename="package://schunk_description/meshes/wsg_50/palm.stl"/>
+      </geometry>
+    </collision>
+  </xacro:macro>
+  <xacro:macro name="palm_simple_visual" params="">
+    <!-- The gripper itself -->
+    <xacro:visual_offset_box s_x="0.1453" s_y="0.0725" s_z="0.049" o_x="0.00" o_y="-0.0351" o_z="0.0"/>
+    <!-- the larger mounting plate -->
+    <xacro:visual_offset_box s_x="0.05" s_y="0.0064" s_z="0.095" o_x="0.00" o_y="0.007" o_z="0"/>
+  </xacro:macro>
+  <xacro:macro name="palm_simple_collision" params="">
+    <!-- The gripper itself -->
+    <xacro:collision_offset_box s_x="0.1453" s_y="0.0725" s_z="0.049" o_x="0.00" o_y="-0.0351" o_z="0.0"/>
+    <!-- the larger mounting plate -->
+    <xacro:collision_offset_box s_x="0.05" s_y="0.0064" s_z="0.095" o_x="0.00" o_y="0.007" o_z="0"/>
+  </xacro:macro>
+
   <xacro:macro name="left_finger_pretty_visual" params="">
     <visual>
       <geometry>
         <mesh filename="package://schunk_description/meshes/wsg_50/finger_without_gelsight.stl"/>
+        <material name="mostly_transparent">
+          <color rgb="255 255 255" alpha="0.1"/>
+        </material>
       </geometry>
     </visual>
   </xacro:macro>

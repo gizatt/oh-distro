@@ -29,8 +29,6 @@
       <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
     </inertial>
     <!-- <xacro:left_finger_simple_visual/> -->
-    <xacro:left_finger_pretty_visual/>
-    <xacro:left_finger_simple_collision/>
   </link>
 
 
@@ -48,9 +46,7 @@
       <mass value="1"/>
       <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
     </inertial>
-    <!-- <xacro:right_finger_simple_visual/> -->
-    <xacro:right_finger_pretty_visual/>
-    <xacro:right_finger_simple_collision/>
+    <!-- no gelsight collision geometry -->
   </link>
 
   <!-- extensions -->

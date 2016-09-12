@@ -34,6 +34,7 @@ pods_install_python_script(drc-rolling-log-splicer python/rolling_logs.py)
 pods_install_python_script(drc-rewrite-log-timestamps python/lcm_log_timestamps.py)
 pods_install_python_script(drc-publish-irb140-estimator-capture-pointcloud python/publish_irb140_estimator_capture_pointcloud.py)
 pods_install_python_script(drc-publish-transform python/publish_transform.py)
+pods_install_python_script(drc-state-sync-generic python/state_sync_generic.py)
 
 # Misc Tools added from ipab/tools
 pods_install_python_script(drc-send-com-height python/send_com_height.py)

@@ -64,12 +64,12 @@ class StateAssembler:
 
 
     def arm_state_handler(self,channel,data):
-        msgIn = drc.robot_state_t.decode(data)
+        msgIn = bot_core.robot_state_t.decode(data)
 
         self.utime = msgIn.utime
         self.main_pose = msgIn.pose
         self.main_twist = msgIn.twist
-        self.main_force_torque = msgIn.main_force_torque
+        self.main_force_torque = msgIn.force_torque
 
         self.joint_state_store[channel]["joint_name"] = msgIn.joint_name
         self.joint_state_store[channel]["joint_position"] = msgIn.joint_position

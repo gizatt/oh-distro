@@ -181,13 +181,6 @@
           "joint6"
           ],
         "labels" : ["1", "2", "3", "4", "5", "6"]
-      }, 
-      { "name" : "Schunk",
-        "joints" : [
-          "wsg_50_finger_left_joint",
-          "wsg_50_finger_right_joint"
-          ],
-        "labels" : ["left", "right"]
       },
 
       { "name" : "Base",

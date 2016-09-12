@@ -62,13 +62,27 @@ group "05.april_tags" {
 
 group "06.gelsight_drivers" {
     cmd "gelsight_depth_publisher" {
-        exec = "$DRC_BASE/../gelsight_se/build/gelsight_depth_driver 0 -v 1";
+        exec = "$DRC_BASE/../gelsight_se/build/gelsight_depth_driver 0 -v 1 -o 0 -l $DRC_BASE/../gelsight_se/trained_lookup.dat";
         host = "localhost";
     }
 }
 
-group "60.robotiq" {
-    cmd "60.robotiq_tcp_node" {
+group "07.state_sync" {
+    cmd "state_sync_generic" {
+        exec = "drc-state-sync-generic";
+        host = "localhost";
+    }
+}
+
+group "60.schunk" {
+    cmd "60.schunk_driver" {
+        exec = "$DRC_BASE/../drake-schunk-driver/build/schunk_driver";
+        host = "localhost";
+    }
+}
+
+group "61.robotiq" {
+    cmd "61.robotiq_tcp_node" {
         exec = "robotiq_tcp_node LEFT 192.168.1.199";
         host = "localhost";
     }
@@ -90,6 +104,6 @@ script "0.go" {
     start group "04.lcm_converter";
     start group "05.april_tags";
     start group "06.gelsight_drivers";
-    start group "60.robotiq";
+    start group "60.schunk";
     start group "99.annoying_message";
 }
