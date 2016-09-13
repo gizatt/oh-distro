@@ -88,10 +88,10 @@
     </collision>
   </xacro:macro>
   <xacro:macro name="left_finger_simple_visual" params="">
-    <xacro:visual_offset_box s_x="0.0365" s_y="0.117" s_z="0.0122" o_x="0.003" o_y="-0.0585" o_z="-0.0056"/>
+    <xacro:visual_offset_box s_x="0.0365" s_y="0.117" s_z="0.0122" o_x="0.003" o_y="-0.0585" o_z="-0.0106"/>
   </xacro:macro>
   <xacro:macro name="left_finger_simple_collision" params="">
-    <xacro:collision_offset_box s_x="0.0365" s_y="0.117" s_z="0.0122" o_x="0.003" o_y="-0.0585" o_z="-0.0056"/>
+    <xacro:collision_offset_box s_x="0.0365" s_y="0.117" s_z="0.0122" o_x="0.003" o_y="-0.0585" o_z="-0.0106"/>
   </xacro:macro>
 
   <xacro:macro name="right_finger_pretty_visual" params="">

@@ -288,10 +288,19 @@
       <mass value="1"/>
       <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01"/>
     </inertial>
+    <!-- The gripper itself -->
     <visual>
       <geometry>
-        <mesh filename="package://schunk_description/meshes/wsg_50/palm.stl"/>
+        <box size="0.1453 0.0725 0.049"/>
       </geometry>
+      <origin rpy="0 0 0" xyz="0.0 -0.0351 0.0"/>
+    </visual>
+    <!-- the larger mounting plate -->
+    <visual>
+      <geometry>
+        <box size="0.05 0.0064 0.095"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0.0 0.007 0"/>
     </visual>
     <!-- The gripper itself -->
     <collision>
@@ -324,17 +333,15 @@
     <!-- <xacro:left_finger_simple_visual/> -->
     <visual>
       <geometry>
-        <mesh filename="package://schunk_description/meshes/wsg_50/finger_without_gelsight.stl"/>
-        <material name="mostly_transparent">
-          <color alpha="0.1" rgb="255 255 255"/>
-        </material>
+        <box size="0.0365 0.117 0.0122"/>
       </geometry>
+      <origin rpy="0 0 0" xyz="0.003 -0.0585 -0.0106"/>
     </visual>
     <collision>
       <geometry>
         <box size="0.0365 0.117 0.0122"/>
       </geometry>
-      <origin rpy="0 0 0" xyz="0.003 -0.0585 -0.0056"/>
+      <origin rpy="0 0 0" xyz="0.003 -0.0585 -0.0106"/>
     </collision>
   </link>
   <joint name="wsg_50_finger_right_joint" type="prismatic">
@@ -351,10 +358,26 @@
       <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01"/>
     </inertial>
     <!-- <xacro:right_finger_simple_visual/> -->
+    <!-- Finger adapter and aluminum adapter block -->
     <visual>
       <geometry>
-        <mesh filename="package://schunk_description/meshes/wsg_50/finger_with_gelsight.stl"/>
+        <box size="0.03 0.0344 0.0344"/>
       </geometry>
+      <origin rpy="0 0 0" xyz="0.0 0.0172 0.0172"/>
+    </visual>
+    <!-- Stick to gelsight box and backplate / optotrak marker mount -->
+    <visual>
+      <geometry>
+        <box size="0.036 0.0883 0.0207"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0.0 0.075 0.025"/>
+    </visual>
+    <!-- Gelsight box -->
+    <visual>
+      <geometry>
+        <box size="0.0318 0.0318 0.037"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="-0.0055 0.1005 0.01231"/>
     </visual>
     <!-- Finger adapter and aluminum adapter block -->
     <collision>
