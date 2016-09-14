@@ -36,8 +36,12 @@ group "03.manipulation_trackers" {
         exec = "runManipulationTracker $DRC_BASE/software/perception/manipulation_tracking/config/estimator_config_apriltags_only.yaml";
         host = "localhost";
     }
-    cmd "gelsight tracker" {
+    cmd "gelsight tracker bolt" {
         exec = "runManipulationTracker $DRC_BASE/software/perception/manipulation_tracking/config/estimator_config_irb140_gelsight.yaml";
+        host = "localhost";
+    }
+    cmd "gelsight tracker cube" {
+        exec = "runManipulationTracker $DRC_BASE/software/perception/manipulation_tracking/config/estimator_config_irb140_gelsight_cube.yaml";
         host = "localhost";
     }
     cmd "error calculator" {

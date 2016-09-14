@@ -50,7 +50,10 @@
         "joint3",
         "joint4",
         "joint5",
-        "joint6"
+        "joint6",
+        "wsg_50_finger_left_joint",
+        "wsg_50_finger_right_joint"
+
       ]
     },
     "gt_arm_ati_gelsight": {
@@ -68,7 +71,9 @@
         "joint3",
         "joint4",
         "joint5",
-        "joint6"
+        "joint6",
+        "wsg_50_finger_left_joint",
+        "wsg_50_finger_right_joint"
       ]
     },
     "desk": {
@@ -82,19 +87,7 @@
         "base_pitch",
         "base_yaw"
       ]
-    },    
-    "cube": {
-      "urdf": "../../perception/manipulation_tracking/urdf/cube.urdf",
-      "update_channel": "EST_MANIPULAND_STATE_cube",
-      "drakeJointNames": [
-        "base_x",
-        "base_y",
-        "base_z",
-        "base_roll",
-        "base_pitch",
-        "base_yaw"
-      ]
-    },    
+    },  
     "optotrak_cube": {
       "urdf": "../../perception/manipulation_tracking/urdf/optotrak_cube.urdf",
       "update_channel": "EST_MANIPULAND_STATE_optotrak_cube",
@@ -119,6 +112,18 @@
         "base_yaw"
       ]
     },     
+    "tiny_screwdriver": {
+      "urdf": "../../perception/manipulation_tracking/urdf/tiny_screwdriver.urdf",
+      "update_channel": "EST_MANIPULAND_STATE_tiny_screwdriver",
+      "drakeJointNames": [
+        "base_x",
+        "base_y",
+        "base_z",
+        "base_roll",
+        "base_pitch",
+        "base_yaw"
+      ]
+    },
     "screwdriver": {
       "urdf": "../../perception/manipulation_tracking/urdf/screwdriver_torx/screwdriver_torx.urdf",
       "update_channel": "EST_MANIPULAND_STATE_screwdriver",
@@ -155,9 +160,9 @@
         "base_yaw"
       ]
     },
-    "tiny_bolt_GT": {
-      "urdf": "../../perception/manipulation_tracking/urdf/tiny_bolt.urdf",
-      "update_channel": "EST_MANIPULAND_STATE_bolt_GT",
+    "hole_box": {
+      "urdf": "../../perception/manipulation_tracking/urdf/hole_box.urdf",
+      "update_channel": "EST_MANIPULAND_STATE_hole_box",
       "drakeJointNames": [
         "base_x",
         "base_y",
